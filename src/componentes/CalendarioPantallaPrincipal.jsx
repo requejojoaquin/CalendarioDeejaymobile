@@ -1,11 +1,17 @@
 import { useState } from 'react'
 import { useAuth } from '../contexto/AuthContext'
+import { useCalendario } from '../contexto/CalendarioContext'
+import { useModoOscuro } from '../contexto/ModoOscuroContext'
 import HeaderCalendario from './HeaderCalendario'
 import Sidebar from './Sidebar'
 import GrillaCalendario from './GrillaCalendario'
+import ModalEvento from './ModalEvento'
+import VisualizadorEvento from './VisualizadorEvento'
 
 function CalendarioPantallaPrincipal() {
   const { usuario, rol } = useAuth()
+  const { notificacionUndo, deshacerEliminacionCalendario, confirmarEliminacionDefinitiva } = useCalendario()
+  const { esOscuro } = useModoOscuro()
   const hoy = new Date()
 
   const [mesActual, setMesActual] = useState(hoy.getMonth())
@@ -13,6 +19,17 @@ function CalendarioPantallaPrincipal() {
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [vistaActual, setVistaActual] = useState('mes')
   const [diaSeleccionado, setDiaSeleccionado] = useState(hoy.getDate())
+  const [modalVisible, setModalVisible] = useState(false)
+  const [fechaParaNuevoEvento, setFechaParaNuevoEvento] = useState(null)
+  
+  const [eventoParaVer, setEventoParaVer] = useState(null)
+  const [mostrarVisualizador, setMostrarVisualizador] = useState(false)
+  const [eventoAEditar, setEventoAEditar] = useState(null)
+
+  // Helper robusto para formatear fecha local
+  const formatYMD = (y, m, d) => {
+    return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  }
 
   const irMesAnterior = () => {
     if (mesActual === 0) { setMesActual(11); setAnioActual(anioActual - 1) }
@@ -32,15 +49,31 @@ function CalendarioPantallaPrincipal() {
 
   const handleDiaClick = (dia) => {
     setDiaSeleccionado(dia)
-    setVistaActual('dia')
+    setFechaParaNuevoEvento(formatYMD(anioActual, mesActual, dia))
+    setEventoAEditar(null)
+    setModalVisible(true)
   }
 
   const handleCrearEvento = () => {
-    console.log('Crear evento — próximo paso')
+    const d = new Date()
+    setFechaParaNuevoEvento(formatYMD(d.getFullYear(), d.getMonth(), d.getDate()))
+    setEventoAEditar(null)
+    setModalVisible(true)
+  }
+
+  const handleEventoClick = (evento) => {
+    setEventoParaVer(evento)
+    setMostrarVisualizador(true)
+  }
+
+  const handleEditarEvento = () => {
+    setEventoAEditar(eventoParaVer)
+    setMostrarVisualizador(false)
+    setModalVisible(true)
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'Google Sans, Roboto, sans-serif' }}>
+    <div className="flex flex-col h-screen font-sans bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200">
       <HeaderCalendario
         mesActual={mesActual}
         anioActual={anioActual}
@@ -50,8 +83,9 @@ function CalendarioPantallaPrincipal() {
         onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
         vistaActual={vistaActual}
         onCambiarVista={setVistaActual}
+        onEventoClick={handleEventoClick}
       />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="flex flex-1 overflow-hidden">
         {sidebarVisible && (
           <Sidebar
             mesActual={mesActual}
@@ -69,8 +103,48 @@ function CalendarioPantallaPrincipal() {
           vistaActual={vistaActual}
           onCambiarVista={setVistaActual}
           diaSeleccionado={diaSeleccionado}
+          onEventoClick={handleEventoClick}
         />
       </div>
+
+      {modalVisible && (
+        <ModalEvento 
+          onClose={() => setModalVisible(false)} 
+          fechaSeleccionada={fechaParaNuevoEvento}
+          eventoAEditar={eventoAEditar}
+        />
+      )}
+
+      {mostrarVisualizador && (
+        <VisualizadorEvento
+          evento={eventoParaVer}
+          onClose={() => setMostrarVisualizador(false)}
+          onEdit={handleEditarEvento}
+        />
+      )}
+
+      {/* Notificación de Deshacer (Undo) */}
+      {notificacionUndo && (
+        <div className="fixed bottom-6 left-6 bg-[#323232] text-white px-6 py-2 rounded shadow-2xl flex items-center gap-6 z-[3000] border border-gray-700 animate-in slide-in-from-bottom-4 duration-300">
+          <span className="text-sm">
+            Se eliminó el calendario "{notificacionUndo.data.nombre}"
+          </span>
+          <div className="flex">
+            <button 
+              onClick={deshacerEliminacionCalendario}
+              className="bg-none border-none text-[#8ab4f8] cursor-pointer text-sm font-medium px-2 py-2 hover:bg-white/5 rounded uppercase"
+            >
+              Descartar
+            </button>
+            <button 
+              onClick={confirmarEliminacionDefinitiva}
+              className="bg-none border-none text-white cursor-pointer text-sm font-medium px-2 py-2 hover:bg-white/5 rounded uppercase"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

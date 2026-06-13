@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, addDoc, collection } from 'firebase/firestore'
 import { auth, db } from '../red/firebase'
 
 const AuthContext = createContext()
@@ -15,10 +15,20 @@ export function AuthProvider({ children }) {
       if (user) {
         const docRef = doc(db, 'users', user.uid)
         const docSnap = await getDoc(docRef)
+        let userRol = null
         if (docSnap.exists()) {
-          setRol(docSnap.data().role)
+          userRol = docSnap.data().role
+          setRol(userRol)
         }
         setUsuario(user)
+
+        // Registrar Log de Inicio de Sesión
+        await addDoc(collection(db, 'logs'), {
+          accion: 'LOGIN',
+          usuario: user.email,
+          rol: userRol,
+          fecha: new Date().toISOString()
+        })
       } else {
         setUsuario(null)
         setRol(null)

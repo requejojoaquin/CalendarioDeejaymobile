@@ -1,3 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff; /* Aseguramos que el fondo secundario también sea blanco en modo claro */
+  --text-primary: #3c4043;
+  --text-secondary: #5f6368;
+  --border-color: #dadce0;
+  --hover-color: #f1f3f4;
+}
+
+.dark {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #2d2d2d;
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --border-color: #3c4043;
+  --hover-color: #3c4043;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -5,7 +25,28 @@
 }
 
 body {
-  background-color: #ffffff;
-  color: #000000;
-  font-family: Google Sans, Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Google Sans', 'Roboto', sans-serif;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Scrollbar personalizado */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border-main: var(--border-color);
 }

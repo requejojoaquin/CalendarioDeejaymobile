@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from './contexto/AuthContext'
+import { CalendarioProvider } from './contexto/CalendarioContext'
 import Login from './componentes/Login'
 import CalendarioPantallaPrincipal from './componentes/CalendarioPantallaPrincipal'
 
@@ -7,7 +8,11 @@ function Contenido() {
 
   if (cargando) return <div style={{ padding: '20px' }}>Cargando...</div>
   if (!usuario) return <Login />
-  return <CalendarioPantallaPrincipal />
+  return (
+    <CalendarioProvider>
+      <CalendarioPantallaPrincipal />
+    </CalendarioProvider>
+  )
 }
 
 function App() {
