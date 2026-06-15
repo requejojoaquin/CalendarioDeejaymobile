@@ -3,12 +3,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAQAyv2xdvXeJy3xjtuzFDEfJdW9e_O1VM",
-  authDomain: "mi-calendario-3971c.firebaseapp.com",
-  projectId: "mi-calendario-3971c",
-  storageBucket: "mi-calendario-3971c.firebasestorage.app",
-  messagingSenderId: "295171983709",
-  appId: "1:295171983709:web:677d4f437368b0617100b4"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);

@@ -49,7 +49,7 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
       if (ubicacion.length > 3 && !sugerencias.some(s => s.display_name === ubicacion) && ubicacion !== eventoAEditar?.ubicacion) {
         setBuscando(true)
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(ubicacion)}&limit=5&addressdetails=1`)
+          const res = await fetch(`http://localhost:5000/api/buscar-direccion?q=${encodeURIComponent(ubicacion)}`)
           const data = await res.json()
           setSugerencias(data)
         } catch (error) {
