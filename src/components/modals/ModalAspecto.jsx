@@ -1,4 +1,4 @@
-import { useModoOscuro } from '../contexto/ModoOscuroContext'
+import { useModoOscuro } from '../../context/ModoOscuroContext'
 import { X, Sun, Moon, Check } from 'lucide-react'
 
 function ModalAspecto({ onClose }) {

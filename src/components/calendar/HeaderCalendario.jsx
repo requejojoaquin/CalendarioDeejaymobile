@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { useCalendario } from '../contexto/CalendarioContext'
-import { useModoOscuro } from '../contexto/ModoOscuroContext'
+import { useCalendario } from '../../context/CalendarioContext'
+import { useModoOscuro } from '../../context/ModoOscuroContext'
 import { Settings, Search, Trash2, Palette, X, ChevronLeft, ChevronRight } from 'lucide-react'
-import ModalAspecto from './ModalAspecto'
+import ModalAspecto from '../modals/ModalAspecto'
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']

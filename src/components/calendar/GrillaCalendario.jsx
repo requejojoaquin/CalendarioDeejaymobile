@@ -1,5 +1,5 @@
-import { useCalendario } from '../contexto/CalendarioContext'
-import { useModoOscuro } from '../contexto/ModoOscuroContext'
+import { useCalendario } from '../../context/CalendarioContext'
+import { useModoOscuro } from '../../context/ModoOscuroContext'
 
 const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -66,7 +66,7 @@ function GrillaCalendario({ mesActual, anioActual, onDiaClick, vistaActual, diaS
                     key={ev.id}
                     onClick={(e) => { e.stopPropagation(); onEventoClick(ev); }}
                     className="px-2 py-1 rounded-md text-[10px] font-bold truncate text-white shadow-sm hover:brightness-90 transition-all"
-                    style={{ backgroundColor: calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }}
+                    style={{ backgroundColor: ev.color || calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }}
                   >
                     {ev.hora} {ev.titulo}
                   </div>
@@ -114,7 +114,7 @@ function GrillaCalendario({ mesActual, anioActual, onDiaClick, vistaActual, diaS
                     key={ev.id}
                     onClick={() => onEventoClick(ev)}
                     className="p-3 rounded-xl text-xs font-bold text-white shadow-md cursor-pointer hover:brightness-95 transition-all"
-                    style={{ backgroundColor: calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }}
+                    style={{ backgroundColor: ev.color || calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }}
                   >
                     <div className="opacity-80 text-[10px] mb-1">{ev.hora}</div>
                     <div className="truncate">{ev.titulo}</div>
@@ -156,7 +156,7 @@ function GrillaCalendario({ mesActual, anioActual, onDiaClick, vistaActual, diaS
                 className="flex items-center gap-6 p-6 rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-color)] cursor-pointer hover:shadow-xl transition-all group"
               >
                 <div className="text-xl font-bold text-[var(--text-primary)] w-20">{ev.hora}</div>
-                <div className="w-1.5 h-12 rounded-full" style={{ backgroundColor: calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }} />
+                <div className="w-1.5 h-12 rounded-full" style={{ backgroundColor: ev.color || calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }} />
                 <div className="flex-1">
                   <h4 className="text-xl font-bold text-[var(--text-primary)] group-hover:text-blue-600 transition-colors">{ev.titulo}</h4>
                   <p className="text-sm text-[var(--text-secondary)] mt-1">{ev.descripcion || 'Sin descripción'}</p>

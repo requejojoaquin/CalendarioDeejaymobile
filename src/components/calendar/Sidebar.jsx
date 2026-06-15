@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useCalendario } from '../contexto/CalendarioContext'
-import { useModoOscuro } from '../contexto/ModoOscuroContext'
+import { useCalendario } from '../../context/CalendarioContext'
+import { useModoOscuro } from '../../context/ModoOscuroContext'
 import { Plus, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
 
 const DIAS_MINI = ['D', 'L', 'M', 'X', 'J', 'V', 'S']

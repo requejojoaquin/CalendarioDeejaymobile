@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { useAuth } from '../contexto/AuthContext'
-import { useCalendario } from '../contexto/CalendarioContext'
-import { useModoOscuro } from '../contexto/ModoOscuroContext'
-import HeaderCalendario from './HeaderCalendario'
-import Sidebar from './Sidebar'
-import GrillaCalendario from './GrillaCalendario'
-import ModalEvento from './ModalEvento'
-import VisualizadorEvento from './VisualizadorEvento'
+import { useAuth } from '../context/AuthContext'
+import { useCalendario } from '../context/CalendarioContext'
+import { useModoOscuro } from '../context/ModoOscuroContext'
+import HeaderCalendario from '../components/calendar/HeaderCalendario'
+import Sidebar from '../components/calendar/Sidebar'
+import GrillaCalendario from '../components/calendar/GrillaCalendario'
+import ModalEvento from '../components/modals/ModalEvento'
+import VisualizadorEvento from '../components/modals/VisualizadorEvento'
 
 function CalendarioPantallaPrincipal() {
   const { usuario, rol } = useAuth()

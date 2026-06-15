@@ -1,5 +1,5 @@
-import { useCalendario } from '../contexto/CalendarioContext'
-import { useAuth } from '../contexto/AuthContext'
+import { useCalendario } from '../../context/CalendarioContext'
+import { useAuth } from '../../context/AuthContext'
 import { X, Pencil, Trash2, MapPin, AlignLeft, Users, Banknote } from 'lucide-react'
 
 function VisualizadorEvento({ evento, onClose, onEdit }) {
@@ -36,7 +36,7 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
 
         <div className="px-8 pb-8 space-y-6">
           <div className="flex items-start gap-5">
-            <div className="w-5 h-5 rounded-md mt-1.5 flex-shrink-0 shadow-sm" style={{ backgroundColor: calendario?.color || '#1a73e8' }} />
+            <div className="w-5 h-5 rounded-md mt-1.5 flex-shrink-0 shadow-sm" style={{ backgroundColor: evento.color || calendario?.color || '#1a73e8' }} />
             <div>
               <h2 className="text-2xl font-bold text-[var(--text-primary)] leading-tight">{evento.titulo}</h2>
               <p className="text-sm font-medium text-[var(--text-secondary)] mt-2">{fechaFormateada} ⋅ {evento.hora}</p>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '../red/firebase'
+import { auth } from '../../services/firebase'
 
 function Login() {
   const [email, setEmail] = useState('')

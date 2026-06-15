@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { db } from '../red/firebase'
+import { db } from '../services/firebase'
+import { registrarLog } from '../services/logger'
 import { 
   collection, 
   addDoc, 
@@ -51,18 +52,6 @@ export const CalendarioProvider = ({ children }) => {
 
     return () => unsubscribe()
   }, [])
-
-  const registrarLog = async (accion, detalles) => {
-    try {
-      await addDoc(collection(db, 'logs'), {
-        accion,
-        ...detalles,
-        fecha: new Date().toISOString()
-      })
-    } catch (error) {
-      console.error("Error al registrar log:", error)
-    }
-  }
 
   const agregarCalendario = (nuevo) => {
     setCalendarios([...calendarios, { ...nuevo, id: Date.now().toString(), visible: true }])

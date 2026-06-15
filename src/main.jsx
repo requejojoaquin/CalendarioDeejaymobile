@@ -2,9 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
-import { AuthProvider } from './contexto/AuthContext'
-import { CalendarioProvider } from './contexto/CalendarioContext'
-import { ModoOscuroProvider } from './contexto/ModoOscuroContext'
+import { AuthProvider } from './context/AuthContext'
+import { CalendarioProvider } from './context/CalendarioContext'
+import { ModoOscuroProvider } from './context/ModoOscuroContext'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

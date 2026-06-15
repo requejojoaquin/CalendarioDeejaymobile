@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { useCalendario } from '../contexto/CalendarioContext'
-import { useAuth } from '../contexto/AuthContext'
-import { db } from '../red/firebase'
+import { useCalendario } from '../../context/CalendarioContext'
+import { useAuth } from '../../context/AuthContext'
+import { db } from '../../services/firebase'
 import { collection, query, getDocs, where, limit } from 'firebase/firestore'
 import { 
   X, 
@@ -26,7 +26,15 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
   const [sugerencias, setSugerencias] = useState([])
   const [buscando, setBuscando] = useState(false)
   const [calendarioId, setCalendarioId] = useState(eventoAEditar?.calendarioId || calendarios[0]?.id || '')
+  const [colorEvento, setColorEvento] = useState(eventoAEditar?.color || calendarios.find(c => c.id === (eventoAEditar?.calendarioId || calendarios[0]?.id))?.color || '#1a73e8')
   const [hora, setHora] = useState(eventoAEditar?.hora || '12:00')
+
+  useEffect(() => {
+    if (!eventoAEditar) {
+      const cal = calendarios.find(c => c.id === calendarioId)
+      if (cal) setColorEvento(cal.color)
+    }
+  }, [calendarioId, calendarios, eventoAEditar])
   
   const obtenerFechaLocal = () => {
     const d = new Date()
@@ -118,6 +126,7 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
       precio,
       ubicacion,
       calendarioId,
+      color: colorEvento,
       fecha,
       hora,
       invitados
@@ -218,6 +227,24 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
                 <div className="w-6 flex justify-center pt-1.5 text-[var(--text-secondary)]"><AlignLeft size={20} /></div>
                 <div className="flex-1">
                   <textarea placeholder="Añade una descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="w-full text-sm text-[var(--text-primary)] border-none outline-none py-1.5 placeholder-[var(--text-secondary)] hover:bg-[var(--hover-color)] focus:bg-[var(--hover-color)] rounded px-2 transition-colors min-h-[40px] resize-none bg-transparent" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="w-6 flex justify-center text-[var(--text-secondary)]">
+                  <div 
+                    className="w-3.5 h-3.5 rounded-full border border-[var(--border-color)]" 
+                    style={{ backgroundColor: colorEvento }} 
+                  />
+                </div>
+                <div className="flex-1 flex items-center gap-3">
+                  <span className="text-sm text-[var(--text-secondary)]">Color del evento:</span>
+                  <input 
+                    type="color" 
+                    value={colorEvento} 
+                    onChange={(e) => setColorEvento(e.target.value)}
+                    className="w-8 h-8 rounded cursor-pointer bg-transparent border-none p-0"
+                  />
                 </div>
               </div>
 

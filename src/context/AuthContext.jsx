@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore'
-import { auth, db } from '../red/firebase'
+import { auth, db } from '../services/firebase'
+import { registrarLog } from '../services/logger'
 
 const AuthContext = createContext()
 
@@ -22,12 +23,10 @@ export function AuthProvider({ children }) {
         }
         setUsuario(user)
 
-        // Registrar Log de Inicio de Sesión
-        await addDoc(collection(db, 'logs'), {
-          accion: 'LOGIN',
+        // Registrar Log de Inicio de Sesión usando el logger centralizado
+        await registrarLog('LOGIN', {
           usuario: user.email,
-          rol: userRol,
-          fecha: new Date().toISOString()
+          rol: userRol
         })
       } else {
         setUsuario(null)
