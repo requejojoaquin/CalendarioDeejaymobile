@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
           setRol(userRol)
         }
         setUsuario(user)
-
+                                                                      
         // Registrar Log de Inicio de Sesión usando el logger centralizado
         await registrarLog('LOGIN', {
           usuario: user.email,

@@ -1,6 +1,7 @@
 import { useCalendario } from '../../context/CalendarioContext'
 import { useAuth } from '../../context/AuthContext'
 import { X, Pencil, Trash2, MapPin, AlignLeft, Users, Banknote } from 'lucide-react'
+import GoogleIcon from '../common/GoogleIcon'
 
 function VisualizadorEvento({ evento, onClose, onEdit }) {
   const { calendarios, eliminarEvento } = useCalendario()
@@ -30,8 +31,8 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
       >
         <div className="flex justify-end items-center p-3 gap-2">
           <button onClick={onEdit} className="p-2 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] transition-colors" title="Editar"><Pencil size={20} /></button>
-          <button onClick={handleEliminar} className="p-2 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] transition-colors" title="Eliminar"><Trash2 size={20} /></button>
-          <button onClick={onClose} className="p-2 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] transition-colors" title="Cerrar"><X size={22} /></button>
+          <button onClick={handleEliminar} className="p-2 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] transition-colors" title="Eliminar"><GoogleIcon name="delete" size={20} /></button>
+          <button onClick={onClose} className="p-2 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] transition-colors" title="Cerrar"><GoogleIcon name="close" size={22} /></button>
         </div>
 
         <div className="px-8 pb-8 space-y-6">

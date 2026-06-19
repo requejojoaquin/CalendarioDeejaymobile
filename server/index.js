@@ -28,10 +28,17 @@ app.get('/api/status', (req, res) => {
 app.get('/api/buscar-direccion', async (req, res) => {
   const { q } = req.query;
   try {
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1`);
+    // Agregamos User-Agent para cumplir con la política de Nominatim
+    // Priorizamos Argentina usando un viewbox (caja delimitadora) pero sin restringir (bounded=0)
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1&viewbox=-73.5,-21.8,-53.6,-55.2&bounded=0`, {
+      headers: {
+        'User-Agent': 'MiCalendarioApp/1.0 (mi-calendario-project)'
+      }
+    });
     const data = await response.json();
     res.json(data);
   } catch (error) {
+    console.error('Error al buscar dirección:', error);
     res.status(500).json({ error: 'Error al consultar el servicio de mapas.' });
   }
 });

@@ -123,22 +123,25 @@ function CalendarioPantallaPrincipal() {
         />
       )}
 
-      {/* Notificación de Deshacer (Undo) */}
+      {/* Notificación de Deshacer (Undo) Estilo Linear */}
       {notificacionUndo && (
-        <div className="fixed bottom-6 left-6 bg-[#323232] text-white px-6 py-2 rounded shadow-2xl flex items-center gap-6 z-[3000] border border-gray-700 animate-in slide-in-from-bottom-4 duration-300">
-          <span className="text-sm">
-            Se eliminó el calendario "{notificacionUndo.data.nombre}"
-          </span>
-          <div className="flex">
+        <div className="fixed bottom-8 left-8 bg-[var(--bg-secondary)] text-[var(--text-primary)] px-6 py-3 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-8 z-[3000] border border-[var(--border-color)] animate-zoom-in backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <span className="text-sm font-semibold tracking-tight">
+              Se eliminó "{notificacionUndo.data.nombre}"
+            </span>
+          </div>
+          <div className="flex gap-2">
             <button 
               onClick={deshacerEliminacionCalendario}
-              className="bg-none border-none text-[#8ab4f8] cursor-pointer text-sm font-medium px-2 py-2 hover:bg-white/5 rounded uppercase"
+              className="px-4 py-1.5 bg-[var(--accent-color)] text-white text-xs font-bold rounded-lg hover:bg-[var(--accent-hover)] transition-all shadow-md active:scale-95"
             >
-              Descartar
+              Deshacer
             </button>
             <button 
               onClick={confirmarEliminacionDefinitiva}
-              className="bg-none border-none text-white cursor-pointer text-sm font-medium px-2 py-2 hover:bg-white/5 rounded uppercase"
+              className="px-4 py-1.5 border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold rounded-lg transition-all"
             >
               Aceptar
             </button>

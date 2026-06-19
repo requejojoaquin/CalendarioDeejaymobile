@@ -44,33 +44,65 @@ function GrillaCalendario({ mesActual, anioActual, onDiaClick, vistaActual, diaS
           if (item.mes === 'anterior') m--
           if (item.mes === 'siguiente') m++
           const fechaKey = formatYMD(anioActual, m, item.dia)
-          const eventosDia = eventos.filter(ev => ev.fecha === fechaKey && calendarios.find(c => c.id === ev.calendarioId)?.visible !== false)
+          
+          // Filtrado por rango de fechas
+          const eventosDia = eventos.filter(ev => {
+            const inicio = ev.fechaInicio || ev.fecha
+            const fin = ev.fechaFin || ev.fecha
+            const esVisible = calendarios.find(c => c.id === ev.calendarioId)?.visible !== false
+            return fechaKey >= inicio && fechaKey <= fin && esVisible
+          })
+
           const esHoy = item.dia === hoy.getDate() && mesActual === hoy.getMonth() && anioActual === hoy.getFullYear() && item.mes === 'actual'
 
           return (
             <div 
               key={index}
               onClick={() => item.mes === 'actual' && onDiaClick(item.dia)}
-              className={`border-r border-b border-[var(--border-color)] p-2 min-h-0 flex flex-col gap-1 transition-colors hover:bg-[var(--hover-color)] cursor-pointer
-                ${item.mes !== 'actual' ? 'bg-[var(--bg-secondary)] opacity-40' : 'bg-[var(--bg-primary)]'}`}
+              className={`border-r border-b border-[var(--border-color)]/50 p-1 min-h-0 flex flex-col gap-0.5 transition-colors hover:bg-[var(--hover-color)]/20 cursor-pointer
+                ${item.mes !== 'actual' ? 'bg-[var(--bg-secondary)]/30 opacity-30' : 'bg-[var(--bg-primary)]'}`}
             >
-              <div className="flex flex-col items-center">
-                <span className={`text-xs font-bold w-8 h-8 flex items-center justify-center rounded-full
-                  ${esHoy ? 'bg-blue-600 text-white shadow-md' : 'text-[var(--text-primary)]'}`}>
+              <div className="flex justify-center mb-1">
+                <span className={`text-[11px] font-black w-6 h-6 flex items-center justify-center rounded-full transition-all
+                  ${esHoy ? 'bg-[var(--accent-color)] text-white shadow-lg scale-110' : 'text-[var(--text-secondary)] opacity-60'}`}>
                   {item.dia}
                 </span>
               </div>
-              <div className="flex flex-col gap-1 overflow-y-auto custom-scrollbar flex-1">
-                {eventosDia.map(ev => (
-                  <div
-                    key={ev.id}
-                    onClick={(e) => { e.stopPropagation(); onEventoClick(ev); }}
-                    className="px-2 py-1 rounded-md text-[10px] font-bold truncate text-white shadow-sm hover:brightness-90 transition-all"
-                    style={{ backgroundColor: ev.color || calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }}
-                  >
-                    {ev.hora} {ev.titulo}
+              <div className="flex flex-col gap-0.5 overflow-hidden flex-1">
+                {eventosDia.slice(0, 4).map(ev => {
+                  const inicio = ev.fechaInicio || ev.fecha
+                  const fin = ev.fechaFin || ev.fecha
+                  const esInicio = fechaKey === inicio
+                  const esFin = fechaKey === fin
+                  const esMultidia = inicio !== fin
+
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={(e) => { e.stopPropagation(); onEventoClick(ev); }}
+                      className={`
+                        px-2 py-0.5 text-[9px] font-black truncate text-white shadow-sm hover:brightness-110 transition-all
+                        ${esInicio ? 'rounded-l-md ml-1' : ''}
+                        ${esFin ? 'rounded-r-md mr-1' : ''}
+                        ${!esInicio && !esFin ? 'mx-0' : ''}
+                        ${!esMultidia ? 'rounded-md mx-1' : ''}
+                        ${ev.todoElDia ? 'opacity-100' : 'opacity-90'}
+                      `}
+                      style={{ 
+                        backgroundColor: ev.color || calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8',
+                        marginTop: '1px'
+                      }}
+                    >
+                      {esInicio && !ev.todoElDia && <span className="opacity-70 mr-1">{ev.hora}</span>}
+                      {ev.titulo}
+                    </div>
+                  )
+                })}
+                {eventosDia.length > 4 && (
+                  <div className="text-[8px] font-bold text-[var(--text-secondary)] text-center mt-auto opacity-50">
+                    + {eventosDia.length - 4} más
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )
@@ -128,42 +160,54 @@ function GrillaCalendario({ mesActual, anioActual, onDiaClick, vistaActual, diaS
     )
   }
 
-  // --- VISTA DIA ---
+  // --- VISTA DIA (Rediseñada con Scroll y Mejoras Estéticas) ---
   const renderVistaDia = () => {
+    const horas = Array.from({ length: 23 }, (_, i) => String(i + 1).padStart(2, '0') + ':00')
     const fechaKey = formatYMD(anioActual, mesActual, diaSeleccionado)
     const eventosDia = eventos.filter(ev => ev.fecha === fechaKey && calendarios.find(c => c.id === ev.calendarioId)?.visible !== false)
     
     return (
-      <div className="flex-1 flex flex-col bg-[var(--bg-primary)] p-8 max-w-4xl mx-auto w-full">
-        <div className="flex items-center gap-6 mb-8 border-b border-[var(--border-color)] pb-6">
-          <span className="text-6xl font-black text-blue-600">{diaSeleccionado}</span>
-          <div className="flex flex-col">
+      <div className="flex flex-col h-full bg-[var(--bg-primary)] overflow-hidden animate-fade-in">
+        {/* Cabezal del día - Fijo arriba */}
+        <div className="px-8 py-6 border-b border-[var(--border-color)] flex items-end gap-6 bg-[var(--bg-secondary)]/30 backdrop-blur-md z-20">
+          <span className="text-6xl font-black tracking-tighter text-[var(--accent-color)] leading-none">{diaSeleccionado}</span>
+          <div className="flex flex-col mb-1">
             <span className="text-2xl font-bold text-[var(--text-primary)]">{DIAS_SEMANA[new Date(anioActual, mesActual, diaSeleccionado).getDay()]}</span>
-            <span className="text-lg text-[var(--text-secondary)]">{MESES_NOMBRES[mesActual]} {anioActual}</span>
+            <span className="text-sm font-black text-[var(--text-secondary)] uppercase tracking-[0.2em]">{MESES_NOMBRES[mesActual]} {anioActual}</span>
           </div>
         </div>
-        <div className="space-y-4">
-          <h3 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest mb-4">Eventos del día</h3>
-          {eventosDia.length === 0 ? (
-            <div className="py-20 text-center border-2 border-dashed border-[var(--border-color)] rounded-3xl text-[var(--text-secondary)] font-medium">
-              No hay eventos programados para hoy
-            </div>
-          ) : (
-            eventosDia.map(ev => (
-              <div
-                key={ev.id}
-                onClick={() => onEventoClick(ev)}
-                className="flex items-center gap-6 p-6 rounded-3xl bg-[var(--bg-secondary)] border border-[var(--border-color)] cursor-pointer hover:shadow-xl transition-all group"
-              >
-                <div className="text-xl font-bold text-[var(--text-primary)] w-20">{ev.hora}</div>
-                <div className="w-1.5 h-12 rounded-full" style={{ backgroundColor: ev.color || calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }} />
-                <div className="flex-1">
-                  <h4 className="text-xl font-bold text-[var(--text-primary)] group-hover:text-blue-600 transition-colors">{ev.titulo}</h4>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">{ev.descripcion || 'Sin descripción'}</p>
+
+        {/* Cronograma con Scroll - Área Principal */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-primary)]">
+          <div className="relative min-w-full pb-20">
+            {horas.map((hora) => (
+              <div key={hora} className="flex border-b border-[var(--border-color)]/30 h-24 group transition-colors hover:bg-[var(--hover-color)]/10">
+                <div className="w-28 flex-shrink-0 flex justify-center pt-3 border-r border-[var(--border-color)]/30">
+                  <span className="text-[12px] font-black text-[var(--text-secondary)] opacity-30 group-hover:opacity-100 transition-opacity tracking-widest">{hora}</span>
+                </div>
+                <div className="flex-1 relative">
+                  {/* Línea de media hora sutil */}
+                  <div className="absolute top-1/2 left-0 right-0 h-px border-t border-dashed border-[var(--border-color)]/10" />
+                  
+                  {/* Eventos mapeados */}
+                  {eventosDia.filter(ev => ev.hora.startsWith(hora.substring(0, 2))).map(ev => (
+                    <div
+                      key={ev.id}
+                      onClick={() => onEventoClick(ev)}
+                      className="absolute inset-x-4 top-2 bottom-2 p-4 rounded-2xl border border-white/5 shadow-2xl cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-all z-10 overflow-hidden flex gap-4 animate-zoom-in"
+                      style={{ backgroundColor: ev.color || calendarios.find(c => c.id === ev.calendarioId)?.color || '#1a73e8' }}
+                    >
+                      <div className="w-1.5 h-full bg-white/20 rounded-full" />
+                      <div className="flex flex-col justify-center min-w-0">
+                        <span className="text-sm font-black text-white truncate uppercase tracking-tight leading-tight">{ev.titulo}</span>
+                        <span className="text-[11px] text-white/70 font-bold mt-0.5">{ev.hora}hs</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))
-          )}
+            ))}
+          </div>
         </div>
       </div>
     )

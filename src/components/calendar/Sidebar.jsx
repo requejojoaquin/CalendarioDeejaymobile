@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useCalendario } from '../../context/CalendarioContext'
 import { useModoOscuro } from '../../context/ModoOscuroContext'
 import { Plus, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
+import GoogleIcon from '../common/GoogleIcon'
 
 const DIAS_MINI = ['D', 'L', 'M', 'X', 'J', 'V', 'S']
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -63,47 +64,47 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
   const dias = generarDiasMini()
 
   return (
-    <div className="w-64 flex-shrink-0 border-r border-[var(--border-color)] flex flex-col pt-12 pb-6 overflow-y-auto bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200 custom-scrollbar relative">
+    <div className="w-80 flex-shrink-0 border-r border-[var(--border-color)] flex flex-col pt-10 pb-10 overflow-y-auto bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200 custom-scrollbar relative">
 
-      {/* Botón Crear Evento - CENTRADO Y MUY GRANDE */}
-      <div className="flex justify-center mb-8 px-4">
+      {/* Botón Crear Evento - Rectángulo Redondeado Estilo Linear */}
+      <div className="flex justify-center mb-10 px-8">
         <button
           onClick={onCrearEvento}
-          className="flex items-center gap-5 px-10 py-5 rounded-full border border-[var(--border-color)] bg-[var(--bg-primary)] shadow-lg hover:shadow-xl dark:hover:bg-gray-700 cursor-pointer text-lg font-bold transition-all w-fit"
+          className="flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-[var(--accent-color)] text-white text-base font-black hover:bg-[var(--accent-hover)] shadow-[0_8px_30px_rgba(94,106,210,0.3)] hover:shadow-[0_8px_40px_rgba(94,106,210,0.5)] transition-all active:scale-90 animate-fade-in group"
         >
-          <Plus size={32} className="text-blue-500" />
+          <GoogleIcon name="add" size={24} className="group-hover:rotate-90 transition-transform duration-300" />
           <span>Crear</span>
         </button>
       </div>
 
-      {/* Mini calendario - CON PADDING IZQUIERDO */}
-      <div className="mb-6 px-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-bold">
+      {/* Mini calendario - Proporciones Linear */}
+      <div className="mb-10 px-8">
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-lg font-bold tracking-tight">
             {MESES[mesActual]} {anioActual}
           </span>
-          <div className="flex gap-1 text-[var(--text-secondary)]">
-            <button onClick={onMesAnterior} className="p-1 hover:bg-[var(--hover-color)] rounded-full transition-colors"><ChevronLeft size={20} /></button>
-            <button onClick={onMesSiguiente} className="p-1 hover:bg-[var(--hover-color)] rounded-full transition-colors"><ChevronRight size={20} /></button>
+          <div className="flex gap-3 text-[var(--text-secondary)]">
+            <button onClick={onMesAnterior} className="p-2 hover:bg-[var(--hover-color)] rounded-lg transition-colors"><GoogleIcon name="back" size={20} /></button>
+            <button onClick={onMesSiguiente} className="p-2 hover:bg-[var(--hover-color)] rounded-lg transition-colors"><GoogleIcon name="back" size={20} className="rotate-180" /></button>
           </div>
         </div>
 
-        <div className="grid grid-cols-7 mb-2 text-[var(--text-secondary)]">
+        <div className="grid grid-cols-7 mb-4 text-[var(--text-secondary)]">
           {DIAS_MINI.map(dia => (
-            <div key={dia} className="text-center text-[10px] font-bold py-1 uppercase">{dia}</div>
+            <div key={dia} className="text-center text-xs font-black py-1 uppercase opacity-40 tracking-widest">{dia}</div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-y-1">
+        <div className="grid grid-cols-7 gap-1.5">
           {dias.map((dia, index) => {
             const esHoy = dia === hoy.getDate() && mesActual === hoy.getMonth() && anioActual === hoy.getFullYear()
             return (
               <div
                 key={index}
                 onClick={() => dia && onDiaClick(dia)}
-                className={`w-7 h-7 leading-7 text-center rounded-full text-[11px] cursor-pointer transition-colors flex items-center justify-center
+                className={`aspect-square flex items-center justify-center text-[15px] font-medium rounded-full cursor-pointer transition-all
                   ${!dia ? 'cursor-default' : 'hover:bg-[var(--hover-color)]'}
-                  ${esHoy ? 'bg-blue-600 !text-white font-bold' : dia ? 'text-[var(--text-primary)]' : 'text-transparent'}`}
+                  ${esHoy ? 'bg-[var(--accent-color)] text-white font-bold shadow-md scale-105' : dia ? 'text-[var(--text-primary)]' : 'text-transparent'}`}
               >
                 {dia || ''}
               </div>
@@ -112,63 +113,62 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
         </div>
       </div>
 
-      {/* Sección Mis Calendarios - CON PADDING IZQUIERDO */}
-      <div className="flex flex-col gap-3 px-4 mt-2">
-        <div className="flex items-center justify-between px-2 mb-1">
-          <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest ml-2">Mis calendarios</span>
+      {/* Sección Mis Calendarios */}
+      <div className="flex flex-col gap-5 px-8">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[12px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] opacity-50">Mis calendarios</span>
           <button 
             onClick={() => setMostrarForm(!mostrarForm)}
-            className="text-[var(--text-secondary)] hover:bg-[var(--hover-color)] p-1.5 rounded-full transition-colors"
+            className="text-[var(--text-secondary)] hover:text-[var(--accent-color)] transition-all hover:scale-110"
           >
-            <Plus size={20} />
+            <GoogleIcon name="add" size={18} />
           </button>
         </div>
 
         {mostrarForm && (
-          <form onSubmit={handleCrearCalendario} className="mx-2 flex flex-col gap-4 p-4 border border-[var(--border-color)] rounded-xl bg-[var(--bg-secondary)] animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
+          <form onSubmit={handleCrearCalendario} className="flex flex-col gap-4 p-5 border border-[var(--border-color)] rounded-2xl bg-[var(--bg-secondary)] animate-slide-down shadow-xl">
             <input 
               type="text" 
               placeholder="Nombre" 
               value={nuevoNombre}
               onChange={(e) => setNuevoNombre(e.target.value)}
-              className="px-3 py-2.5 text-sm border border-[var(--border-color)] rounded-lg bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="linear-input text-base"
             />
-            <div className="flex items-center gap-3 px-1">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">Elegir color</span>
               <input 
                 type="color" 
                 value={nuevoColor}
                 onChange={(e) => setNuevoColor(e.target.value)}
-                className="w-10 h-10 border-none bg-transparent cursor-pointer rounded-lg overflow-hidden scale-110"
+                className="w-10 h-8 rounded cursor-pointer border-none bg-transparent"
               />
-              <span className="text-xs font-bold text-[var(--text-secondary)]">Elegir color</span>
             </div>
-            <div className="flex gap-2 justify-end mt-1">
-              <button type="button" onClick={() => setMostrarForm(false)} className="px-4 py-2 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Cancelar</button>
-              <button type="submit" className="px-6 py-2 text-xs bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-sm transition-all">Guardar</button>
+            <div className="flex gap-3 justify-end mt-2">
+              <button type="button" onClick={() => setMostrarForm(false)} className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancelar</button>
+              <button type="submit" className="px-6 py-2 bg-[var(--accent-color)] text-white rounded-lg text-sm font-bold hover:bg-[var(--accent-hover)] transition-all">Crear Capa</button>
             </div>
           </form>
         )}
-
-        <div className="flex flex-col gap-1 mt-1">
+        <div className="flex flex-col gap-1.5">
           {calendarios.map(cal => (
             <div 
               key={cal.id} 
-              className="dots-menu-container flex items-center gap-4 px-4 py-2.5 rounded-xl cursor-pointer group hover:bg-[var(--hover-color)] transition-colors relative"
+              className="flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer group hover:bg-[var(--hover-color)] transition-all relative border border-transparent hover:border-[var(--border-color)]"
+              onClick={() => toggleCalendarioVisible(cal.id)}
             >
-              <input 
-                type="checkbox" 
-                checked={cal.visible} 
-                onChange={() => toggleCalendarioVisible(cal.id)}
-                className="w-4.5 h-4.5 rounded-md border-[var(--border-color)] cursor-pointer transition-colors"
-                style={{ accentColor: cal.color }}
+              <div 
+                className={`w-3.5 h-3.5 rounded-sm border-2 transition-all ${cal.visible ? 'shadow-[0_0_10px_currentcolor]' : 'opacity-20'}`}
+                style={{ backgroundColor: cal.visible ? cal.color : 'transparent', borderColor: cal.color, color: cal.color }}
               />
-              <span className="text-sm font-semibold text-[var(--text-primary)] flex-1 truncate">{cal.nombre}</span>
-              
+              <span className={`text-[15px] font-semibold transition-colors truncate flex-1 ${cal.visible ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                {cal.nombre}
+              </span>
+
               <button
                 onClick={(e) => handleAbrirMenu(e, cal.id)}
-                className={`p-2 rounded-full text-[var(--text-secondary)] hover:bg-gray-200 dark:hover:bg-gray-700 transition-all opacity-0 group-hover:opacity-100 ${menuAbiertoId === cal.id ? 'opacity-100 bg-gray-200 dark:bg-gray-700' : ''}`}
+                className={`p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] opacity-0 group-hover:opacity-100 ${menuAbiertoId === cal.id ? 'opacity-100 shadow-sm' : ''}`}
               >
-                <MoreVertical size={18} />
+                <MoreVertical size={16} />
               </button>
 
               {/* Menú de opciones - FIXED para evitar corte */}

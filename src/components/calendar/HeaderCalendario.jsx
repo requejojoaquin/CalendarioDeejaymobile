@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useCalendario } from '../../context/CalendarioContext'
 import { useModoOscuro } from '../../context/ModoOscuroContext'
-import { Settings, Search, Trash2, Palette, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Settings, Search, Trash2, Palette, X, ChevronLeft, ChevronRight, Menu } from 'lucide-react'
 import ModalAspecto from '../modals/ModalAspecto'
+import GoogleIcon from '../common/GoogleIcon'
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -63,103 +64,48 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
 
   return (
     <div 
-      className="flex items-center px-6 border-b border-[var(--border-color)] gap-4 h-20 flex-shrink-0 relative bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200"
+      className="flex items-center px-8 border-b border-[var(--border-color)] gap-8 h-20 flex-shrink-0 relative bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200"
     >
 
       <button
         onClick={onToggleSidebar}
-        className="p-3 hover:bg-[var(--hover-color)] rounded-full cursor-pointer transition-colors text-[var(--text-primary)]"
+        className="p-2.5 hover:bg-[var(--hover-color)] rounded-lg cursor-pointer transition-all text-[var(--text-primary)] active:scale-95"
       >
-        ☰
+        <GoogleIcon name="menu" size={20} />
       </button>
 
-      <span className="text-2xl font-normal w-[200px] ml-2">
-        Calendario
-      </span>
-
-      <div className="w-10" />
-
-      {/* Botón Hoy - MUY GRANDE */}
-      <button
-        onClick={onHoy}
-        className="px-10 py-3 border-2 border-[var(--border-color)] rounded-lg cursor-pointer text-base font-bold bg-[var(--bg-primary)] hover:bg-[var(--hover-color)] transition-all shadow-sm active:scale-95"
-      >
-        Hoy
-      </button>
-
-      {/* Flechas de navegación - MÁS GRANDES */}
-      <div className="flex gap-2">
+      <div className="flex items-center gap-5">
+        <span className="text-xl font-black tracking-tight uppercase">
+          Calendario
+        </span>
+        
         <button
-          onClick={onAnterior}
-          className="p-3 hover:bg-[var(--hover-color)] rounded-full cursor-pointer transition-colors"
+          onClick={onHoy}
+          className="flex items-center gap-2 px-6 py-2 border-2 border-[var(--border-color)] rounded-xl cursor-pointer text-sm font-bold bg-[var(--bg-primary)] hover:border-[var(--text-primary)] transition-all active:scale-95"
         >
-          <ChevronLeft size={28} />
+          <GoogleIcon name="home" size={18} />
+          Hoy
         </button>
-        <button
-          onClick={onSiguiente}
-          className="p-3 hover:bg-[var(--hover-color)] rounded-full cursor-pointer transition-colors"
-        >
-          <ChevronRight size={28} />
-        </button>
+
+        <div className="flex items-center gap-2">
+          <button onClick={onAnterior} className="p-2 hover:bg-[var(--hover-color)] rounded-lg transition-colors"><GoogleIcon name="back" size={22} /></button>
+          <button onClick={onSiguiente} className="p-2 hover:bg-[var(--hover-color)] rounded-lg transition-colors"><GoogleIcon name="back" size={22} className="rotate-180" /></button>
+        </div>
       </div>
 
-      <span className="text-2xl font-semibold min-w-[250px]">
+      <span className="text-xl font-bold tracking-tight min-w-[200px]">
         {MESES[mesActual]} {anioActual}
       </span>
 
       <div className="flex-1" />
 
-      {/* Selector de vista - MUY GRANDE */}
-      <select
-        value={vistaActual}
-        onChange={(e) => onCambiarVista(e.target.value)}
-        className="px-10 py-3 border-2 border-[var(--border-color)] rounded-lg text-base font-bold cursor-pointer bg-[var(--bg-primary)] hover:bg-[var(--hover-color)] transition-all outline-none mr-6 shadow-sm appearance-none text-center"
-      >
-        <option value="mes">Mes</option>
-        <option value="semana">Semana</option>
-        <option value="dia">Día</option>
-        <option value="anio">Año</option>
-      </select>
-
-      <div ref={settingsRef} className="relative mr-6">
-        <button
-          onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-          className="p-3 hover:bg-[var(--hover-color)] rounded-full cursor-pointer flex items-center justify-center text-[var(--text-secondary)] transition-colors"
-        >
-          <Settings size={28} />
-        </button>
-
-        {showSettingsMenu && (
-          <div className="absolute top-14 right-0 bg-[var(--bg-primary)] shadow-2xl rounded-2xl z-[1500] w-[220px] py-3 flex flex-col border border-[var(--border-color)] animate-in fade-in zoom-in duration-150 shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
-            <button
-              onClick={() => {
-                setShowAspectoModal(true)
-                setShowSettingsMenu(false)
-              }}
-              className="px-6 py-4 text-base font-medium flex items-center hover:bg-[var(--hover-color)] transition-colors"
-            >
-              <Palette size={20} className="mr-4 text-blue-500" />
-              Aspecto
-            </button>
-            <button
-              className="px-6 py-4 text-base font-medium text-[var(--text-secondary)] opacity-60 flex items-center cursor-default"
-            >
-              <Trash2 size={20} className="mr-4" />
-              Papelera
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Buscador - MUY ESTRECHO Y PEQUEÑO */}
-      <div ref={searchRef} className="relative">
-        <div className="flex items-center bg-[var(--bg-secondary)] rounded-xl px-4 w-[140px] h-12 transition-all group focus-within:bg-[var(--bg-primary)] focus-within:w-[220px] focus-within:shadow-xl border border-transparent focus-within:border-blue-400">
-          <span className="text-[var(--text-secondary)] mr-2 flex-shrink-0">
-            <Search size={16} />
-          </span>
+      {/* Buscador Estilo Linear - REUBICADO ANTES DEL SELECTOR */}
+      <div ref={searchRef} className="relative group mx-2">
+        <div className="flex items-center bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 h-11 w-[200px] transition-all group-focus-within:w-[320px] group-focus-within:border-[var(--accent-color)] group-focus-within:shadow-[0_0_20px_rgba(94,106,210,0.15)] group-focus-within:bg-[var(--bg-primary)]">
+          <GoogleIcon name="search" size={16} className="text-[var(--text-secondary)] mr-3 flex-shrink-0" />
           <input
             type="text"
-            placeholder="Buscar"
+            placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value)
@@ -172,25 +118,69 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
         </div>
 
         {showSuggestions && searchTerm && filteredEventos.length > 0 && (
-          <div className="absolute top-[56px] left-0 right-0 bg-[var(--bg-primary)] shadow-2xl rounded-2xl z-[1200] max-h-[350px] overflow-y-auto border border-[var(--border-color)] animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute top-14 left-0 right-0 bg-[var(--bg-secondary)] shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-2xl z-[1200] max-h-[400px] overflow-y-auto border border-[var(--border-color)] animate-zoom-in backdrop-blur-xl">
             {filteredEventos.slice(0, 5).map(evento => {
               const cal = calendarios.find(c => c.id === evento.calendarioId)
               return (
                 <div
                   key={evento.id}
                   onClick={() => handleSelectEvento(evento)}
-                  className="px-5 py-4 cursor-pointer flex items-center gap-4 border-b border-[var(--border-color)] last:border-none hover:bg-[var(--hover-color)] transition-colors"
+                  className="px-6 py-4 cursor-pointer flex items-center gap-4 border-b border-[var(--border-color)] last:border-none hover:bg-[var(--hover-color)] transition-colors"
                 >
-                  <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: cal?.color || '#1a73e8' }} />
+                  <div className="w-3 h-3 rounded-full flex-shrink-0 shadow-[0_0_8px_currentcolor]" style={{ backgroundColor: cal?.color || '#1a73e8', color: cal?.color }} />
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-bold truncate">{evento.titulo}</span>
-                    <span className="text-xs text-[var(--text-secondary)] font-medium">{evento.fecha}</span>
+                    <span className="text-[10px] text-[var(--text-secondary)] font-semibold uppercase tracking-wider">{evento.fecha}</span>
                   </div>
                 </div>
               )
             })}
           </div>
         )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        {/* Selector de vista - REUBICADO AL FINAL */}
+        <select
+          value={vistaActual}
+          onChange={(e) => onCambiarVista(e.target.value)}
+          className="px-6 py-2 border-2 border-[var(--border-color)] rounded-xl text-sm font-bold cursor-pointer bg-[var(--bg-primary)] hover:border-[var(--text-primary)] transition-all outline-none shadow-sm appearance-none text-center min-w-[100px]"
+        >
+          <option value="mes">Mes</option>
+          <option value="semana">Semana</option>
+          <option value="dia">Día</option>
+          <option value="anio">Año</option>
+        </select>
+
+        <div ref={settingsRef} className="relative">
+          <button
+            onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+            className="p-2.5 hover:bg-[var(--hover-color)] rounded-lg cursor-pointer flex items-center justify-center text-[var(--text-secondary)] transition-all active:scale-95"
+          >
+            <GoogleIcon name="settings" size={22} />
+          </button>
+
+          {showSettingsMenu && (
+            <div className="absolute top-14 right-0 bg-[var(--bg-secondary)] shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-2xl z-[1500] w-56 py-3 flex flex-col border border-[var(--border-color)] animate-zoom-in backdrop-blur-xl">
+              <button
+                onClick={() => {
+                  setShowAspectoModal(true)
+                  setShowSettingsMenu(false)
+                }}
+                className="px-6 py-3 text-sm font-bold flex items-center hover:bg-[var(--hover-color)] transition-colors gap-4"
+              >
+                <Palette size={18} className="text-[var(--accent-color)]" />
+                Aspecto
+              </button>
+              <button
+                className="px-6 py-3 text-sm font-bold text-[var(--text-secondary)] opacity-30 flex items-center cursor-default gap-4"
+              >
+                <GoogleIcon name="delete" size={18} />
+                Papelera
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {showAspectoModal && (
