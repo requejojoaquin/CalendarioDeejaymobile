@@ -1,0 +1,119 @@
+rules_version = '2';
+
+// =============================================================================
+// REGLAS DE SEGURIDAD DE FIRESTORE - mi-calendario
+// -----------------------------------------------------------------------------
+// El control de acceso REAL vive ACÁ, no en el cliente. El frontend puede
+// ocultar botones, pero cualquiera con la API key (que es pública por diseño en
+// Firebase) puede pegarle directo a Firestore. Por eso TODA decisión de
+// seguridad se toma en estas reglas.
+//
+// Roles del sistema:
+//   - 'admin'       -> el cliente y su socia. Acceso total (lectura/escritura),
+//                      incluyendo presupuestos.
+//   - 'trabajador'  -> SOLO LECTURA de eventos/calendarios. NUNCA puede leer
+//                      presupuestos ni escribir nada.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // HELPERS
+    // -------------------------------------------------------------------------
+
+    // ¿Hay un usuario autenticado? (token de Firebase Auth válido)
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Lee el rol del usuario actual desde su documento en /users.
+    // get() cuenta como una lectura facturada, pero es la forma correcta y
+    // segura de resolver el rol del lado del servidor.
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // ¿El usuario actual es admin? Primero exige estar logueado para evitar que
+    // getRole() falle al intentar leer /users/null.
+    function isAdmin() {
+      return isSignedIn() &&
+             getRole() == 'admin';
+    }
+
+    // -------------------------------------------------------------------------
+    // users/{uid}
+    // -------------------------------------------------------------------------
+    // Lectura: un admin puede leer cualquier usuario (necesita la lista para
+    // administrar); un usuario común solo puede leerse a sí mismo (para
+    // resolver su propio rol al iniciar sesión).
+    // Escritura: NADIE desde la app. Las altas/bajas/cambios de rol se hacen a
+    // mano desde la consola de Firebase. Así un trabajador no puede auto-
+    // promoverse a 'admin' editando su propio documento.
+    match /users/{uid} {
+      allow read: if isAdmin() || request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // eventos/{id}
+    // -------------------------------------------------------------------------
+    // Lectura: cualquier usuario autenticado (admins y trabajadores ven la
+    // agenda). IMPORTANTE: los documentos de eventos NO contienen el
+    // presupuesto; el monto vive aparte en /presupuestos para que el trabajador
+    // jamás lo reciba aunque lea el evento.
+    // Escritura (create/update/delete): solo admin. Los trabajadores son
+    // estrictamente de SOLO LECTURA.
+    match /eventos/{id} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // presupuestos/{id}
+    // -------------------------------------------------------------------------
+    // Esto es lo que oculta DE VERDAD el presupuesto a los trabajadores: ni
+    // siquiera pueden LEER el documento. Lectura y escritura exclusivas de
+    // admin. Mantener el monto en una colección separada (en vez de un campo
+    // del evento) es lo que permite proteger el dato a nivel de reglas.
+    match /presupuestos/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // calendarios/{id}
+    // -------------------------------------------------------------------------
+    // Lectura: cualquier usuario autenticado (los trabajadores necesitan saber
+    // qué calendarios existen para ver sus eventos).
+    // Escritura: solo admin (crear/renombrar/borrar calendarios).
+    match /calendarios/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // logs/{id}  (auditoría append-only)
+    // -------------------------------------------------------------------------
+    // create: cualquier usuario autenticado puede DEJAR un registro de
+    //         auditoría (ej.: "fulano inició sesión", "se editó tal evento").
+    // read:   solo admin puede revisar la auditoría.
+    // update/delete: NUNCA. Un log que se puede modificar o borrar no sirve
+    //         como evidencia. Append-only = inmutable una vez escrito.
+    match /logs/{id} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // CUALQUIER OTRA COSA -> DENEGADO
+    // -------------------------------------------------------------------------
+    // Regla "catch-all" por defecto-cerrado. Cualquier colección/documento que
+    // no esté declarado arriba queda completamente bloqueado. Si mañana se
+    // agrega una colección nueva, falla cerrada (deny) hasta que se le escriban
+    // reglas explícitas.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

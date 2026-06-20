@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc, addDoc, collection } from 'firebase/firestore'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../services/firebase'
 import { registrarLog } from '../services/logger'
 
@@ -37,8 +37,17 @@ export function AuthProvider({ children }) {
     return () => unsub()
   }, [])
 
+  const logout = async () => {
+    try {
+      await registrarLog('LOGOUT', { usuario: usuario?.email, rol })
+    } catch {
+      // El log no debe bloquear el cierre de sesión.
+    }
+    await signOut(auth)
+  }
+
   return (
-    <AuthContext.Provider value={{ usuario, rol, cargando }}>
+    <AuthContext.Provider value={{ usuario, rol, cargando, logout }}>
       {children}
     </AuthContext.Provider>
   )

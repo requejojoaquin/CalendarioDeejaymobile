@@ -1,81 +1,258 @@
+/* ============================================================
+   FUENTE — Inter (Google/Apple Calendar look) con fallback
+   system-ui de alta calidad. Las reglas @import deben ir ANTES
+   que cualquier otra regla (excepto @charset/@layer).
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@font-face {
-  font-family: 'Inter';
-  src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-}
-
+/* ============================================================
+   TOKENS DE DISEÑO — MODO CLARO (:root)
+   Accent = azul Google #1a73e8. Limpio, mucho aire, bordes
+   sutiles, sombras suaves, esquinas redondeadas.
+   ============================================================ */
 :root {
-  /* Linear Light Mode (Inspired) */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f7f8f8;
-  --text-primary: #121212;
-  --text-secondary: #62666d;
-  --border-color: #e2e4e6;
-  --hover-color: #f1f3f4;
-  --accent-color: #5e6ad2;
-  --accent-hover: #828fff;
+  /* --- Superficies / fondos --- */
+  --bg-primary: #ffffff;        /* Canvas base */
+  --bg-secondary: #f8f7f5;      /* Tarjetas / sidebar — neutro cálido */
+  --bg-tertiary: #efedea;       /* Superficie hundida / chips */
+
+  /* --- Texto --- */
+  --text-primary: #1c1a17;      /* Texto principal — casi negro cálido */
+  --text-secondary: #6b6660;    /* Texto secundario */
+  --text-tertiary: #9c968e;     /* Texto terciario / placeholders / hints */
+
+  /* --- Bordes e interacción --- */
+  --border-color: #e7e4df;      /* Hairlines / bordes sutiles cálidos */
+  --hover-color: #f3f1ee;       /* Fondo de hover neutro cálido */
+
+  /* --- Accent (azul Google) --- */
+  --accent-color: #ea580c;      /* Ember — acento ÚNICO (orange-600, AA sobre blanco) */
+  --accent-hover: #c2410c;      /* Acento en hover (más profundo) */
+  --accent-soft: rgba(234, 88, 12, 0.10); /* Tinte del accent ~10% */
+  --accent-contrast: #ffffff;   /* Texto sobre fondo accent */
+
+  /* --- Estados semánticos --- */
+  --danger-color: #d93025;      /* Errores / acciones destructivas */
+  --danger-soft: rgba(217, 48, 37, 0.10);
+  --success-color: #1e8e3e;     /* Éxito / confirmaciones */
+  --warning-color: #f9ab00;     /* Avisos */
+
+  /* --- Radios --- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* --- Sombras (suaves, estilo Calendar) --- */
+  --shadow-sm: 0 1px 2px rgba(60, 64, 67, 0.10), 0 1px 1px rgba(60, 64, 67, 0.06);
+  --shadow-md: 0 2px 6px rgba(60, 64, 67, 0.12), 0 1px 2px rgba(60, 64, 67, 0.08);
+  --shadow-lg: 0 8px 24px rgba(60, 64, 67, 0.16), 0 2px 6px rgba(60, 64, 67, 0.10);
+
+  /* --- Espaciado (escala 4px) --- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* --- Anillo de foco accesible --- */
+  --ring-accent: 0 0 0 3px var(--accent-soft);
+
+  color-scheme: light;
 }
 
+/* ============================================================
+   TOKENS DE DISEÑO — MODO OSCURO (.dark en documentElement)
+   Fondos #1e1e1e / #2d2d2d como ya usa la app. Accent un poco
+   más luminoso para contraste sobre fondo oscuro.
+   ============================================================ */
 .dark {
-  /* Linear Dark Mode (Ajustado para mejor visibilidad) */
-  --bg-primary: #08090a;      /* Fondo base (Canvas) ligeramente más claro */
-  --bg-secondary: #111315;    /* Superficies (Cards/Sidebar) más visibles */
-  --text-primary: #f7f8f8;    /* Texto principal (Blanco Linear) */
-  --text-secondary: #a1a1aa;  /* Texto secundario más brillante */
-  --border-color: #2a2d32;    /* Bordes (Hairlines) más definidos */
-  --hover-color: #1c1f23;     /* Color de hover más distinguible */
-  --accent-color: #5e6ad2;    /* Lavanda Linear */
-  --accent-hover: #7c89f8;
+  /* --- Superficies / fondos (near-black estilo Cron/obsidiana cálida) --- */
+  --bg-primary: #0f0d0a;        /* Canvas base — obsidiana */
+  --bg-secondary: #161412;      /* Tarjetas / sidebar — grafito */
+  --bg-tertiary: #1f1c18;       /* Superficie hundida / chips */
+
+  /* --- Texto (bone / ash) --- */
+  --text-primary: #f5f3f0;      /* Titulares — bone */
+  --text-secondary: #c7c3bd;    /* Cuerpo — ash */
+  --text-tertiary: #847f76;     /* Terciario / placeholders */
+
+  /* --- Bordes e interacción (separación por contraste tonal, no sombra) --- */
+  --border-color: #2a2621;      /* Hairlines cálidas y sutiles */
+  --hover-color: #1c1915;       /* Fondo de hover */
+
+  /* --- Accent (ember — único color cromático del chrome) --- */
+  --accent-color: #ff4700;      /* Ember */
+  --accent-hover: #ff5e26;      /* Ember en hover */
+  --accent-soft: rgba(255, 71, 0, 0.15); /* Tinte del accent */
+  --accent-contrast: #ffffff;   /* Texto sobre fondo accent */
+
+  /* --- Estados semánticos --- */
+  --danger-color: #f28b82;
+  --danger-soft: rgba(242, 139, 130, 0.16);
+  --success-color: #81c995;
+  --warning-color: #fdd663;
+
+  /* --- Sombras (más profundas en oscuro) --- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 1px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.35);
+
+  /* --- Anillo de foco accesible --- */
+  --ring-accent: 0 0 0 3px var(--accent-soft);
+
+  color-scheme: dark;
 }
 
+/* ============================================================
+   RESET + BASE
+   ============================================================ */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  /* Transición suave al cambiar de tema (evita flash) */
   transition: background-color 0.3s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Títulos estilo Linear: Negrita y tracking negativo */
-h1, h2, h3, .linear-title {
-  letter-spacing: -0.04em;
+/* ============================================================
+   TIPOGRAFÍA — tamaños/pesos consistentes, line-heights legibles
+   ============================================================ */
+h1, h2, h3, h4, h5, h6, .linear-title {
+  letter-spacing: -0.02em;
   font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
 }
 
-/* Animaciones globales */
+h1 { font-size: 1.875rem; letter-spacing: -0.03em; font-weight: 700; }
+h2 { font-size: 1.5rem;   letter-spacing: -0.025em; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+
+small { font-size: 0.8125rem; }
+
+/* Números limpios: Inter + cifras tabulares. La UI usa Plus Jakarta Sans
+   como base (labels humanistas), pero los números de día/hora se mantienen
+   en Inter para conservar su look prolijo y alineado. */
+.font-num {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+a:hover { color: var(--accent-hover); }
+
+/* ============================================================
+   ANIMACIONES — keyframes + utilidades (suaves 150–250ms)
+   ============================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInFromTop {
+  from { transform: translateY(-10px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-zoom-in {
+  animation: zoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-down {
+  animation: slideInFromTop 0.22s ease-out forwards;
+}
+
+/* Spinner reutilizable (botones de carga, etc.) */
+.animate-spin-slow {
+  animation: spin 0.7s linear infinite;
+}
+
+/* Respeta reduce-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============================================================
+   TRANSICIONES Y MICROINTERACCIONES (helpers existentes)
+   ============================================================ */
 .transition-linear {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hover-lift:hover {
   transform: translateY(-1px);
-  filter: brightness(1.1);
+  filter: brightness(1.05);
 }
 
-/* Scrollbar estilo Linear */
+/* ============================================================
+   SCROLLBAR — fina y discreta, adaptada a claro/oscuro
+   ============================================================ */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--text-tertiary);
+  background-clip: content-box;
 }
 
-/* Efecto de brillo sutil en el borde superior para paneles */
+/* ============================================================
+   BORDE SUPERIOR CON BRILLO (helper existente)
+   ============================================================ */
 .linear-border-top {
   position: relative;
 }
@@ -87,65 +264,88 @@ h1, h2, h3, .linear-title {
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border-color), transparent);
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
-/* Animaciones estilo Linear (Manuales para asegurar visibilidad) */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes zoomIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes slideInFromTop {
-  from { transform: translateY(-10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-.animate-zoom-in {
-  animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-slide-down {
-  animation: slideInFromTop 0.3s ease-out forwards;
-}
-
-/* Clases de utilidad para el diseño de Linear */
+/* ============================================================
+   TARJETAS — superficie elevada estándar
+   ============================================================ */
 .linear-card {
   background-color: var(--bg-secondary);
-  border: 1px border var(--border-color);
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.linear-input {
-  background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 14px;
-  transition: all 0.2s;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
 }
 
-.linear-input:focus {
+/* ============================================================
+   INPUTS — base reutilizable (fondo sutil, borde, focus accent)
+   ============================================================ */
+.linear-input {
+  width: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.linear-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.linear-input:hover {
+  border-color: var(--text-tertiary);
+}
+
+.linear-input:focus,
+.linear-input:focus-visible {
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.2);
+  box-shadow: var(--ring-accent);
   outline: none;
 }
 
+.linear-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   FOCO ACCESIBLE GLOBAL (teclado)
+   ============================================================ */
+:focus-visible {
+  outline: none;
+}
+
+/* ============================================================
+   PUENTE DE TOKENS PARA TAILWIND v4
+   Expone las CSS vars como utilidades (bg-bg-primary, text-text-secondary,
+   border-border-main, bg-accent, etc.) sin romper nombres existentes.
+   ============================================================ */
 @theme {
   --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
   --color-border-main: var(--border-color);
+  --color-hover: var(--hover-color);
   --color-accent: var(--accent-color);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger-color);
+  --color-success: var(--success-color);
+  --color-warning: var(--warning-color);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
 }

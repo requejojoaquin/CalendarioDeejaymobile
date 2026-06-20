@@ -1,90 +1,228 @@
+import { useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useCalendario } from '../../context/CalendarioContext'
 import { useAuth } from '../../context/AuthContext'
-import { X, Pencil, Trash2, MapPin, AlignLeft, Users, Banknote } from 'lucide-react'
-import GoogleIcon from '../common/GoogleIcon'
+import { puedeEditar, puedeVerPresupuesto } from '../../utils/permisos'
+import { scrimVariants, popVariants, staggerContainer, fadeUpItem, tap } from '../../lib/motion'
+import { Pencil, Trash2, MapPin, AlignLeft, Users, Banknote, Clock, X } from 'lucide-react'
+
+// Formatea una fecha ("YYYY-MM-DD" o ISO) a "lunes, 5 de junio".
+const formatearFecha = (valor) => {
+  if (!valor) return ''
+  const d = new Date(valor)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+}
 
 function VisualizadorEvento({ evento, onClose, onEdit }) {
-  const { calendarios, eliminarEvento } = useCalendario()
-  const { usuario, rol } = useAuth()
-  const isAdmin = rol === 'admin'
-  const calendario = calendarios.find(c => c.id === evento.calendarioId)
+  const { calendarios, eliminarEvento, getPresupuesto } = useCalendario()
+  const { rol } = useAuth()
+
+  const puedeGestionar = puedeEditar(rol)
+  const calendario = calendarios.find((c) => c.id === evento.calendarioId)
+  const colorEvento = evento.color || calendario?.color || '#1a73e8'
+
+  // Presupuesto: solo si el rol puede verlo Y existe en el contexto.
+  const presupuesto = puedeVerPresupuesto(rol) ? getPresupuesto(evento.id) : undefined
+
+  // Cerrar con la tecla Escape.
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
   const handleEliminar = () => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este evento?')) {
-      eliminarEvento(evento.id, usuario?.email)
+    if (!puedeGestionar) return
+    if (window.confirm('¿Seguro que quieres mover este evento a la papelera?')) {
+      eliminarEvento(evento.id)
       onClose()
     }
   }
 
-  const fechaObj = new Date(evento.fecha)
-  const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { 
-    weekday: 'long', 
-    day: 'numeric', 
-    month: 'long' 
-  })
+  // Rango de fechas: usa fechaInicio (con fallback a fecha legacy) y fechaFin.
+  const fechaInicio = evento.fechaInicio || evento.fecha
+  const fechaFin = evento.fechaFin
+  const inicioFmt = formatearFecha(fechaInicio)
+  const finFmt = formatearFecha(fechaFin)
+  // Mostramos rango solo si fechaFin existe y difiere del inicio.
+  const hayRango = !!fechaFin && fechaFin !== fechaInicio && !!finFmt
+
+  // Hora: null/ausente => todo el día.
+  const esTodoElDia = evento.todoElDia || !evento.hora
+  let textoHorario
+  if (hayRango) {
+    textoHorario = `${inicioFmt} → ${finFmt}`
+  } else if (esTodoElDia) {
+    textoHorario = `${inicioFmt} · Todo el día`
+  } else {
+    textoHorario = `${inicioFmt} · ${evento.hora}`
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center z-[2000] p-4 backdrop-blur-[1px]" onClick={onClose}>
-      <div 
-        className="bg-[var(--bg-primary)] rounded-2xl shadow-2xl w-full max-w-[350px] overflow-hidden flex flex-col transition-all duration-300 transform scale-100 border border-[var(--border-color)]"
+    <motion.div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000] p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={evento.titulo || 'Detalle del evento'}
+      variants={scrimVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+    >
+      <motion.div
+        className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-lg)] w-full max-w-[380px] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        variants={popVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
       >
-        <div className="flex justify-end items-center p-3 gap-2">
-          <button onClick={onEdit} className="p-2 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] transition-colors" title="Editar"><Pencil size={20} /></button>
-          <button onClick={handleEliminar} className="p-2 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] transition-colors" title="Eliminar"><GoogleIcon name="delete" size={20} /></button>
-          <button onClick={onClose} className="p-2 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] transition-colors" title="Cerrar"><GoogleIcon name="close" size={22} /></button>
+        {/* Barra de color superior (identidad del calendario) */}
+        <div className="h-1.5 w-full" style={{ backgroundColor: colorEvento }} />
+
+        {/* Acciones */}
+        <div className="flex justify-end items-center px-3.5 pt-3.5 gap-1.5">
+          {puedeGestionar && (
+            <>
+              <motion.button
+                onClick={onEdit}
+                aria-label="Editar evento"
+                title="Editar"
+                whileTap={tap}
+                className="flex items-center justify-center w-11 h-11 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
+              >
+                <Pencil size={18} />
+              </motion.button>
+              <motion.button
+                onClick={handleEliminar}
+                aria-label="Eliminar evento"
+                title="Eliminar"
+                whileTap={tap}
+                className="flex items-center justify-center w-11 h-11 hover:bg-[var(--danger-soft)] rounded-full text-[var(--text-secondary)] hover:text-[var(--danger-color)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger-color)]"
+              >
+                <Trash2 size={18} />
+              </motion.button>
+            </>
+          )}
+          <motion.button
+            onClick={onClose}
+            aria-label="Cerrar"
+            title="Cerrar"
+            whileTap={tap}
+            className="flex items-center justify-center w-11 h-11 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
+          >
+            <X size={20} />
+          </motion.button>
         </div>
 
-        <div className="px-8 pb-8 space-y-6">
-          <div className="flex items-start gap-5">
-            <div className="w-5 h-5 rounded-md mt-1.5 flex-shrink-0 shadow-sm" style={{ backgroundColor: evento.color || calendario?.color || '#1a73e8' }} />
-            <div>
-              <h2 className="text-2xl font-bold text-[var(--text-primary)] leading-tight">{evento.titulo}</h2>
-              <p className="text-sm font-medium text-[var(--text-secondary)] mt-2">{fechaFormateada} ⋅ {evento.hora}</p>
+        <motion.div
+          className="px-6 pb-7 pt-1 space-y-6"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
+          {/* Título + horario */}
+          <motion.div className="flex items-start gap-4" variants={fadeUpItem}>
+            <span
+              className="w-4 h-4 rounded-[5px] mt-1.5 flex-shrink-0 ring-1 ring-black/5"
+              style={{ backgroundColor: colorEvento }}
+              aria-hidden="true"
+            />
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] leading-snug break-words">
+                {evento.titulo || '(Sin título)'}
+              </h2>
+              <div className="flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)] mt-1.5">
+                <Clock size={14} className="flex-shrink-0" />
+                <span className="capitalize tabular-nums">{textoHorario}</span>
+              </div>
             </div>
-          </div>
+          </motion.div>
 
+          {/* Ubicación */}
           {evento.ubicacion && (
-            <div className="flex items-start gap-5">
-              <div className="w-6 flex justify-center text-[var(--text-secondary)] pt-0.5"><MapPin size={20} /></div>
-              <span className="text-base text-[var(--text-primary)] leading-relaxed">{evento.ubicacion}</span>
-            </div>
+            <motion.div className="flex items-start gap-4" variants={fadeUpItem}>
+              <div className="w-5 flex justify-center text-[var(--text-secondary)] pt-0.5 flex-shrink-0">
+                <MapPin size={18} />
+              </div>
+              <span className="text-sm text-[var(--text-primary)] leading-relaxed break-words">
+                {evento.ubicacion}
+              </span>
+            </motion.div>
           )}
 
+          {/* Invitados */}
           {evento.invitados && evento.invitados.length > 0 && (
-            <div className="flex items-start gap-5">
-              <div className="w-6 flex justify-center text-[var(--text-secondary)] pt-0.5"><Users size={20} /></div>
+            <motion.div className="flex items-start gap-4" variants={fadeUpItem}>
+              <div className="w-5 flex justify-center text-[var(--text-secondary)] pt-0.5 flex-shrink-0">
+                <Users size={18} />
+              </div>
               <div className="flex flex-wrap gap-2">
-                {evento.invitados.map(inv => (
-                  <span key={inv.id} className="text-xs bg-[var(--bg-secondary)] text-[var(--text-primary)] px-3 py-1 rounded-full border border-[var(--border-color)] font-medium">
+                {evento.invitados.map((inv) => (
+                  <span
+                    key={inv.id || inv.email}
+                    className="text-xs bg-[var(--bg-tertiary)] text-[var(--text-primary)] px-3 py-1 rounded-full border border-[var(--border-color)] font-medium"
+                  >
                     {inv.email}
                   </span>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
 
+          {/* Descripción */}
           {evento.descripcion && (
-            <div className="flex items-start gap-5">
-              <div className="w-6 flex justify-center text-[var(--text-secondary)] pt-0.5"><AlignLeft size={20} /></div>
-              <span className="text-base text-[var(--text-primary)] whitespace-pre-wrap">{evento.descripcion}</span>
-            </div>
+            <motion.div className="flex items-start gap-4" variants={fadeUpItem}>
+              <div className="w-5 flex justify-center text-[var(--text-secondary)] pt-0.5 flex-shrink-0">
+                <AlignLeft size={18} />
+              </div>
+              <span className="text-sm text-[var(--text-primary)] whitespace-pre-wrap break-words leading-relaxed">
+                {evento.descripcion}
+              </span>
+            </motion.div>
           )}
 
-          {isAdmin && evento.precio && (
-            <div className="flex items-start gap-5 pt-4 border-t border-[var(--border-color)]">
-              <div className="w-6 flex justify-center text-green-600 dark:text-green-400 pt-0.5"><Banknote size={20} /></div>
-              <span className="text-base font-bold text-[var(--text-primary)]">{evento.precio}</span>
-            </div>
+          {/* Presupuesto (solo admin y si hay valor) */}
+          {presupuesto && (
+            <motion.div className="flex items-start gap-4 pt-4 border-t border-[var(--border-color)]" variants={fadeUpItem}>
+              <div className="w-5 flex justify-center text-[var(--success-color)] pt-0.5 flex-shrink-0">
+                <Banknote size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium tracking-wide text-[var(--text-tertiary)]">
+                  Presupuesto
+                </p>
+                <span className="text-sm font-semibold text-[var(--text-primary)] break-words">
+                  {presupuesto}
+                </span>
+              </div>
+            </motion.div>
           )}
 
-          <div className="flex items-center gap-5 text-[var(--text-secondary)]">
-            <div className="w-6 flex justify-center"><div className="w-2.5 h-2.5 rounded-full bg-[var(--border-color)]" /></div>
-            <span className="text-xs font-bold uppercase tracking-wider">{calendario?.nombre || 'Sin calendario'}</span>
-          </div>
-        </div>
-      </div>
-    </div>
+          {/* Calendario */}
+          <motion.div className="flex items-center gap-4 text-[var(--text-secondary)] pt-1" variants={fadeUpItem}>
+            <div className="w-5 flex justify-center flex-shrink-0">
+              <span
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: colorEvento }}
+                aria-hidden="true"
+              />
+            </div>
+            <span className="text-xs font-medium truncate">
+              {calendario?.nombre || 'Sin calendario'}
+            </span>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   )
 }
 
