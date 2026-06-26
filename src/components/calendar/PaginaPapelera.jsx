@@ -10,7 +10,8 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import {
-  spring,
+  scrimVariants,
+  popVariants,
   staggerContainer,
   fadeUpItem,
   tap,
@@ -157,14 +158,24 @@ function PaginaPapelera({ onClose }) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-[2500] bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col"
+      className="fixed inset-0 z-[3000] bg-black/50 backdrop-blur-sm p-4 flex items-center justify-center"
       role="dialog"
       aria-modal="true"
       aria-label="Papelera de eventos"
-      initial={{ x: '100%' }}
-      animate={{ x: 0, transition: spring }}
-      exit={{ x: '100%', transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }}
+      onClick={onClose}
+      variants={scrimVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
     >
+      <motion.div
+        className="w-full max-w-4xl h-[85vh] bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-xl border border-[var(--border-color)] shadow-2xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        variants={popVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+      >
       {/* Barra superior */}
       <div className="flex items-center gap-3 px-4 sm:px-6 h-16 flex-shrink-0 border-b border-[var(--border-color)]">
         <motion.button
@@ -177,7 +188,7 @@ function PaginaPapelera({ onClose }) {
           <ArrowLeft size={20} />
         </motion.button>
 
-        <h1 className="flex items-center gap-2.5 text-xl font-semibold tracking-tight">
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <Trash2 size={20} className="text-[var(--text-secondary)]" />
           Papelera
         </h1>
@@ -228,9 +239,9 @@ function PaginaPapelera({ onClose }) {
       </div>
 
       {/* Buscador */}
-      <div className="flex-shrink-0 border-b border-[var(--border-color)] px-4 sm:px-6 py-3">
+      <div className="flex-shrink-0 border-b border-[var(--border-color)] px-4 sm:px-6 pt-6 pb-4">
         <div className="max-w-3xl mx-auto w-full">
-          <div className="flex items-center gap-2.5 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[var(--radius-md)] pl-3.5 pr-3 min-h-[44px] transition-colors focus-within:border-[var(--accent-color)] focus-within:shadow-[var(--ring-accent)] focus-within:bg-[var(--bg-primary)]">
+          <div className="flex items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[var(--radius-md)] pl-4 pr-3 min-h-[48px] transition-colors focus-within:border-[var(--accent-color)] focus-within:shadow-[var(--ring-accent)] focus-within:bg-[var(--bg-primary)]">
             <Search size={18} className="text-[var(--text-tertiary)] flex-shrink-0" />
             <input
               type="text"
@@ -245,14 +256,13 @@ function PaginaPapelera({ onClose }) {
       </div>
 
       {/* Lista (scroll propio) */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-3xl mx-auto w-full px-6 py-6">
-          {vacia || sinResultados ? (
-            // Empty state (vacía o sin coincidencias del buscador)
-            <motion.div
+      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+        {vacia || sinResultados ? (
+          // Empty state centrado en TODO el ancho del modal (sin max-w que lo descentre)
+          <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } }}
-              className="flex flex-col items-center justify-center text-center px-8 py-20 gap-4"
+              className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-6"
             >
               <div className="w-16 h-16 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-tertiary)]">
                 <Trash2 size={28} />
@@ -268,7 +278,8 @@ function PaginaPapelera({ onClose }) {
                 </p>
               </div>
             </motion.div>
-          ) : (
+        ) : (
+          <div className="max-w-3xl mx-auto w-full px-6 py-6 flex-1 flex flex-col">
             <motion.ul
               className="flex flex-col gap-2"
               variants={staggerContainer}
@@ -290,9 +301,9 @@ function PaginaPapelera({ onClose }) {
                       exit={{ opacity: 0, x: -16, height: 0, marginBottom: 0, transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } }}
                       className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-color)] bg-[var(--bg-secondary)]"
                     >
-                      <div className="flex items-start gap-3 px-4 py-3.5">
+                      <div className="flex items-start gap-3 px-4 py-4">
                         <span
-                          className="mt-1.5 w-3 h-3 rounded-full flex-shrink-0 ring-1 ring-black/5"
+                          className="mt-2 w-3 h-3 rounded-full flex-shrink-0 ring-1 ring-black/5"
                           style={{ backgroundColor: color }}
                           aria-hidden="true"
                         />
@@ -327,7 +338,7 @@ function PaginaPapelera({ onClose }) {
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {confirmando ? (
                             <>
-                              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-[var(--danger-color)]">
+                              <span className="hidden sm:inline-flex items-center gap-2 text-xs text-[var(--danger-color)]">
                                 <AlertTriangle size={14} />
                                 ¿Eliminar?
                               </span>
@@ -385,9 +396,10 @@ function PaginaPapelera({ onClose }) {
                 })}
               </AnimatePresence>
             </motion.ul>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+      </motion.div>
     </motion.div>
   )
 }

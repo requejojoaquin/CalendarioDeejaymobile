@@ -305,12 +305,12 @@ export const CalendarioProvider = ({ children }) => {
   // Envía invitaciones por email vía el backend Express.
   // No lanza ante errores: solo loguea (un fallo de email no debe romper nada).
   // Se declara antes que `agregarEvento` porque este la utiliza.
-  const enviarInvitaciones = useCallback(async (evento, invitados, organizador) => {
+  const enviarInvitaciones = useCallback(async (evento, invitados, organizador, presupuesto) => {
     try {
       const res = await fetch(`${API_URL}/api/enviar-invitacion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ evento, invitados, organizador })
+        body: JSON.stringify({ evento, invitados, organizador, presupuesto })
       })
 
       if (res.status === 503) {
@@ -349,8 +349,9 @@ export const CalendarioProvider = ({ children }) => {
       throw new Error(primerError || 'Datos del evento inválidos')
     }
 
-    // Separamos el presupuesto (`precio`) del resto: NO va en el doc del evento.
-    const { precio, ...datosSinPrecio } = datos
+    // Separamos el presupuesto (`precio`) y el flag de UI `incluirPresupuesto`
+    // del resto: NINGUNO va en el doc del evento.
+    const { precio, incluirPresupuesto, ...datosSinPrecio } = datos
     const proximoNum = calcularProximoNum()
 
     try {
@@ -382,7 +383,11 @@ export const CalendarioProvider = ({ children }) => {
       // Invitaciones por email (si las hay). Un fallo NO rompe la creación.
       if (datos.invitados?.length) {
         try {
-          await enviarInvitaciones(datos, datos.invitados, usuario?.email)
+          // El presupuesto solo viaja si el organizador lo marcó Y su rol puede verlo.
+          // Pasamos `datosSinPrecio` para que `precio` NUNCA salga en el objeto evento.
+          const presupuestoParaMail =
+            incluirPresupuesto && puedeVerPresupuesto(rol) ? precio : undefined
+          await enviarInvitaciones(datosSinPrecio, datos.invitados, usuario?.email, presupuestoParaMail)
         } catch (error) {
           console.error('Error al enviar invitaciones:', error)
         }
@@ -398,6 +403,9 @@ export const CalendarioProvider = ({ children }) => {
   // Edita un evento. Tolera args extra (llamadores viejos pasan el email).
   const editarEvento = useCallback(async (id, datos) => {
     const { precio, ...datosSinPrecio } = datos
+    // `incluirPresupuesto` es un flag de UI (solo aplica al enviar invitaciones
+    // al crear); nunca debe persistirse en el doc del evento.
+    delete datosSinPrecio.incluirPresupuesto
     const eventoOriginal = eventosRaw.find((e) => e.id === id)
     try {
       await updateDoc(doc(db, 'eventos', id), datosSinPrecio)

@@ -93,7 +93,7 @@ function Login() {
       }}
     >
       <motion.main
-        className="w-full max-w-[400px] rounded-xl p-8 sm:p-9"
+        className="w-full max-w-[440px] rounded-xl p-10"
         style={{
           backgroundColor: 'var(--bg-secondary)',
           border: '1px solid var(--border-color)',
@@ -105,7 +105,7 @@ function Login() {
       >
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
           {/* Encabezado */}
-          <header className="flex flex-col items-center text-center mb-7">
+          <header className="flex flex-col items-center text-center mb-8">
             <motion.div
               className="flex items-center justify-center w-14 h-14 rounded-xl mb-4"
               style={{
@@ -125,7 +125,7 @@ function Login() {
               CalendarMobile
             </motion.h1>
             <motion.p
-              className="mt-1.5 text-sm"
+              className="mt-2 text-sm"
               style={{ color: 'var(--text-secondary)' }}
               variants={fadeUpItem}
             >
@@ -138,7 +138,7 @@ function Login() {
             {error && (
               <motion.div
                 role="alert"
-                className="flex items-start gap-2.5 rounded-lg px-3.5 py-3 mb-5 text-sm"
+                className="flex items-start gap-2 rounded-lg px-4 py-3 mb-6 text-sm"
                 style={{
                   backgroundColor: 'var(--danger-soft)',
                   color: 'var(--danger-color)',
@@ -154,9 +154,9 @@ function Login() {
             )}
           </AnimatePresence>
 
-          <form onSubmit={handleLogin} noValidate className="flex flex-col gap-5">
+          <form onSubmit={handleLogin} noValidate className="flex flex-col gap-6">
           {/* Campo: Email */}
-          <motion.div className="flex flex-col gap-1.5" variants={fadeUpItem}>
+          <motion.div className="flex flex-col gap-2" variants={fadeUpItem}>
             <label
               htmlFor="login-email"
               className="text-sm font-medium"
@@ -167,7 +167,7 @@ function Login() {
             <div className="relative">
               <Mail
                 size={18}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2"
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2"
                 style={{ color: 'var(--text-tertiary)' }}
                 aria-hidden="true"
               />
@@ -178,7 +178,7 @@ function Login() {
                 autoComplete="email"
                 className="linear-input min-h-[44px] text-[15px]"
                 style={{
-                  paddingLeft: '42px',
+                  paddingLeft: '44px',
                   borderColor: errores.email ? 'var(--danger-color)' : undefined,
                 }}
                 placeholder="tu@email.com"
@@ -210,7 +210,7 @@ function Login() {
           </motion.div>
 
           {/* Campo: Contraseña */}
-          <motion.div className="flex flex-col gap-1.5" variants={fadeUpItem}>
+          <motion.div className="flex flex-col gap-2" variants={fadeUpItem}>
             <label
               htmlFor="login-password"
               className="text-sm font-medium"
@@ -221,7 +221,7 @@ function Login() {
             <div className="relative">
               <Lock
                 size={18}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2"
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2"
                 style={{ color: 'var(--text-tertiary)' }}
                 aria-hidden="true"
               />
@@ -231,7 +231,7 @@ function Login() {
                 autoComplete="current-password"
                 className="linear-input min-h-[44px] text-[15px]"
                 style={{
-                  paddingLeft: '42px',
+                  paddingLeft: '44px',
                   paddingRight: '44px',
                   borderColor: errores.password ? 'var(--danger-color)' : undefined,
                 }}
@@ -344,7 +344,7 @@ function Login() {
 
           {/* Divisor "o" entre el form y el acceso con Google */}
           <motion.div
-            className="flex items-center gap-3 my-5"
+            className="flex items-center gap-3 my-6"
             variants={fadeUpItem}
             aria-hidden="true"
           >
@@ -362,7 +362,7 @@ function Login() {
             disabled={cargando}
             variants={fadeUpItem}
             whileTap={cargando ? undefined : tap}
-            className="inline-flex items-center justify-center gap-2.5 w-full rounded-[var(--radius-md)] px-5 min-h-[44px] text-sm font-medium transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 w-full rounded-[var(--radius-md)] px-5 min-h-[44px] text-sm font-medium transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               backgroundColor: 'var(--bg-primary)',
               color: 'var(--text-primary)',

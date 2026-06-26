@@ -4,18 +4,22 @@ import { useCalendario } from '../../context/CalendarioContext'
 import { useAuth } from '../../context/AuthContext'
 import { puedeEditar, puedeVerPresupuesto } from '../../utils/permisos'
 import { scrimVariants, popVariants, staggerContainer, fadeUpItem, tap } from '../../lib/motion'
-import { Pencil, Trash2, MapPin, AlignLeft, Users, Banknote, Clock, X } from 'lucide-react'
+import { etiquetaRecurrencia, parseYMD } from '../../utils/recurrencia'
+import { Pencil, Trash2, MapPin, AlignLeft, Users, Banknote, Clock, Repeat, X } from 'lucide-react'
 
 // Formatea una fecha ("YYYY-MM-DD" o ISO) a "lunes, 5 de junio".
 const formatearFecha = (valor) => {
-  if (!valor) return ''
-  const d = new Date(valor)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('es-ES', {
+  // parseYMD interpreta "YYYY-MM-DD" como fecha LOCAL (evita el off-by-one que
+  // hacía `new Date('2026-06-20')` => 19 a las 21:00 en husos negativos).
+  const d = parseYMD(valor)
+  if (!d) return ''
+  const texto = d.toLocaleDateString('es-ES', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   })
+  // Capitaliza solo la primera letra (no cada palabra): "Sábado, 20 de junio".
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
 
 function VisualizadorEvento({ evento, onClose, onEdit }) {
@@ -25,6 +29,8 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
   const puedeGestionar = puedeEditar(rol)
   const calendario = calendarios.find((c) => c.id === evento.calendarioId)
   const colorEvento = evento.color || calendario?.color || '#1a73e8'
+  // Etiqueta legible de la repetición ("Se repite cada semana"), o null.
+  const labelRecurrencia = etiquetaRecurrencia(evento.recurrencia)
 
   // Presupuesto: solo si el rol puede verlo Y existe en el contexto.
   const presupuesto = puedeVerPresupuesto(rol) ? getPresupuesto(evento.id) : undefined
@@ -78,7 +84,7 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
       exit="exit"
     >
       <motion.div
-        className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-lg)] w-full max-w-[380px] overflow-hidden flex flex-col"
+        className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl shadow-2xl w-full max-w-[440px] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         variants={popVariants}
         initial="initial"
@@ -89,7 +95,7 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
         <div className="h-1.5 w-full" style={{ backgroundColor: colorEvento }} />
 
         {/* Acciones */}
-        <div className="flex justify-end items-center px-3.5 pt-3.5 gap-1.5">
+        <div className="flex justify-end items-center px-4 pt-2 gap-0.5">
           {puedeGestionar && (
             <>
               <motion.button
@@ -97,7 +103,7 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
                 aria-label="Editar evento"
                 title="Editar"
                 whileTap={tap}
-                className="flex items-center justify-center w-11 h-11 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
+                className="flex items-center justify-center w-9 h-9 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
               >
                 <Pencil size={18} />
               </motion.button>
@@ -106,7 +112,7 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
                 aria-label="Eliminar evento"
                 title="Eliminar"
                 whileTap={tap}
-                className="flex items-center justify-center w-11 h-11 hover:bg-[var(--danger-soft)] rounded-full text-[var(--text-secondary)] hover:text-[var(--danger-color)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger-color)]"
+                className="flex items-center justify-center w-9 h-9 hover:bg-[var(--danger-soft)] rounded-full text-[var(--text-secondary)] hover:text-[var(--danger-color)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger-color)]"
               >
                 <Trash2 size={18} />
               </motion.button>
@@ -117,14 +123,14 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
             aria-label="Cerrar"
             title="Cerrar"
             whileTap={tap}
-            className="flex items-center justify-center w-11 h-11 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
+            className="flex items-center justify-center w-9 h-9 hover:bg-[var(--hover-color)] rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
           >
             <X size={20} />
           </motion.button>
         </div>
 
         <motion.div
-          className="px-6 pb-7 pt-1 space-y-6"
+          className="px-8 pb-6 pt-1 space-y-3"
           variants={staggerContainer}
           initial="initial"
           animate="animate"
@@ -132,7 +138,7 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
           {/* Título + horario */}
           <motion.div className="flex items-start gap-4" variants={fadeUpItem}>
             <span
-              className="w-4 h-4 rounded-[5px] mt-1.5 flex-shrink-0 ring-1 ring-black/5"
+              className="w-4 h-4 rounded-[5px] mt-1 flex-shrink-0 ring-1 ring-black/5"
               style={{ backgroundColor: colorEvento }}
               aria-hidden="true"
             />
@@ -140,12 +146,24 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
               <h2 className="text-xl font-bold text-[var(--text-primary)] leading-snug break-words">
                 {evento.titulo || '(Sin título)'}
               </h2>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-[var(--text-secondary)] mt-1.5">
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] mt-2">
                 <Clock size={14} className="flex-shrink-0" />
-                <span className="capitalize tabular-nums">{textoHorario}</span>
+                <span className="tabular-nums">{textoHorario}</span>
               </div>
             </div>
           </motion.div>
+
+          {/* Repetición */}
+          {labelRecurrencia && (
+            <motion.div className="flex items-start gap-4" variants={fadeUpItem}>
+              <div className="w-5 flex justify-center text-[var(--text-secondary)] pt-0.5 flex-shrink-0">
+                <Repeat size={18} />
+              </div>
+              <span className="text-sm text-[var(--text-primary)] leading-relaxed">
+                {labelRecurrencia}
+              </span>
+            </motion.div>
+          )}
 
           {/* Ubicación */}
           {evento.ubicacion && (
@@ -193,7 +211,7 @@ function VisualizadorEvento({ evento, onClose, onEdit }) {
           {/* Presupuesto (solo admin y si hay valor) */}
           {presupuesto && (
             <motion.div className="flex items-start gap-4 pt-4 border-t border-[var(--border-color)]" variants={fadeUpItem}>
-              <div className="w-5 flex justify-center text-[var(--success-color)] pt-0.5 flex-shrink-0">
+              <div className="w-5 flex justify-center text-[var(--text-secondary)] pt-0.5 flex-shrink-0">
                 <Banknote size={18} />
               </div>
               <div className="min-w-0">

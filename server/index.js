@@ -55,7 +55,42 @@ app.get('/api/status', (req, res) => {
   res.json({ status: 'Servidor funcionando correctamente y protegido.' });
 });
 
-// Ejemplo: Proxy para ocultar APIs externas (como el buscador de direcciones)
+// Expande abreviaturas comunes de direcciones (AR) para mejorar el match de
+// Nominatim: "av cabildo" -> "avenida cabildo", "gral paz" -> "general paz".
+function normalizarConsulta(q) {
+  const reglas = [
+    [/\bav\.?\b/gi, 'avenida'],
+    [/\bavda\.?\b/gi, 'avenida'],
+    [/\bgral\.?\b/gi, 'general'],
+    [/\bpte\.?\b/gi, 'presidente'],
+    [/\bdr\.?\b/gi, 'doctor'],
+    [/\bbv\.?\b/gi, 'bulevar'],
+  ];
+  let s = q;
+  for (const [re, full] of reglas) s = s.replace(re, full);
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+// Consulta a Nominatim filtrando a Argentina (countrycodes) y pidiendo más
+// resultados. Devuelve siempre un array (vacío ante respuesta inesperada).
+async function buscarEnNominatim(consulta) {
+  const params = new URLSearchParams({
+    format: 'json',
+    q: consulta,
+    limit: '8',
+    addressdetails: '1',
+    dedupe: '1',
+    countrycodes: 'ar',
+    'accept-language': 'es',
+  });
+  const resp = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+    headers: { 'User-Agent': 'MiCalendarioApp/1.0 (mi-calendario-project)' },
+  });
+  const data = await resp.json();
+  return Array.isArray(data) ? data : [];
+}
+
+// Proxy del buscador de direcciones (oculta Nominatim, normaliza y filtra AR).
 app.get('/api/buscar-direccion', async (req, res) => {
   const { q } = req.query;
 
@@ -68,14 +103,13 @@ app.get('/api/buscar-direccion', async (req, res) => {
   }
 
   try {
-    // Agregamos User-Agent para cumplir con la política de Nominatim
-    // Priorizamos Argentina usando un viewbox (caja delimitadora) pero sin restringir (bounded=0)
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1&viewbox=-73.5,-21.8,-53.6,-55.2&bounded=0`, {
-      headers: {
-        'User-Agent': 'MiCalendarioApp/1.0 (mi-calendario-project)'
-      }
-    });
-    const data = await response.json();
+    // Normalizamos abreviaturas y filtramos a Argentina (countrycodes=ar).
+    const consulta = normalizarConsulta(q);
+    let data = await buscarEnNominatim(consulta);
+    // Fallback para POIs ("mcdonalds avenida cabildo"): reintenta con ", Argentina".
+    if (data.length === 0 && !/argentina/i.test(consulta)) {
+      data = await buscarEnNominatim(`${consulta}, Argentina`);
+    }
     res.json(data);
   } catch (error) {
     console.error('Error al buscar dirección:', error);
@@ -116,7 +150,7 @@ function ahoraUTC() {
 }
 
 // Genera el contenido completo de un VCALENDAR/VEVENT.
-function generarICS(evento, invitados, organizador) {
+function generarICS(evento, invitados, organizador, presupuesto) {
   const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@mi-calendario`;
   const dtstamp = ahoraUTC();
 
@@ -147,8 +181,13 @@ function generarICS(evento, invitados, organizador) {
     `SUMMARY:${escaparICS(evento.titulo)}`,
   ];
 
-  if (evento.descripcion) {
-    lineas.push(`DESCRIPTION:${escaparICS(evento.descripcion)}`);
+  // La DESCRIPTION del .ics combina las notas del evento y, solo si el
+  // organizador lo eligió, la info de presupuesto.
+  const partesDescripcion = [];
+  if (evento.descripcion) partesDescripcion.push(evento.descripcion);
+  if (presupuesto) partesDescripcion.push(`Presupuesto: ${presupuesto}`);
+  if (partesDescripcion.length > 0) {
+    lineas.push(`DESCRIPTION:${escaparICS(partesDescripcion.join('\n\n'))}`);
   }
   if (evento.ubicacion) {
     lineas.push(`LOCATION:${escaparICS(evento.ubicacion)}`);
@@ -176,7 +215,7 @@ const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // ---------------------------------------------------------------------------
 app.post('/api/enviar-invitacion', limiterInvitaciones, async (req, res) => {
   try {
-    const { evento, invitados, organizador } = req.body || {};
+    const { evento, invitados, organizador, presupuesto } = req.body || {};
 
     // --- Validación de entrada ---
     const errores = [];
@@ -214,6 +253,15 @@ app.post('/api/enviar-invitacion', limiterInvitaciones, async (req, res) => {
       errores.push('El "organizador" debe ser un email válido.');
     }
 
+    // El presupuesto es opcional. Si viene, validamos tipo y largo.
+    if (presupuesto !== undefined && presupuesto !== null && presupuesto !== '') {
+      if (typeof presupuesto !== 'string') {
+        errores.push('El "presupuesto" debe ser texto.');
+      } else if (presupuesto.length > 200) {
+        errores.push('El "presupuesto" no puede superar los 200 caracteres.');
+      }
+    }
+
     if (errores.length > 0) {
       return res.status(400).json({ error: 'Datos inválidos', detalles: errores });
     }
@@ -227,7 +275,7 @@ app.post('/api/enviar-invitacion', limiterInvitaciones, async (req, res) => {
     }
 
     // --- Generamos el ICS y lo codificamos en base64 para el adjunto ---
-    const ics = generarICS(evento, invitados, organizador);
+    const ics = generarICS(evento, invitados, organizador, presupuesto);
     const icsBase64 = Buffer.from(ics, 'utf-8').toString('base64');
 
     const destinatarios = invitados.map((inv) => inv.email.trim());
@@ -242,6 +290,7 @@ app.post('/api/enviar-invitacion', limiterInvitaciones, async (req, res) => {
         ${evento.hora ? `<p><strong>Hora:</strong> ${escaparHTML(evento.hora)}</p>` : ''}
         ${evento.ubicacion ? `<p><strong>Ubicación:</strong> ${escaparHTML(evento.ubicacion)}</p>` : ''}
         ${evento.descripcion ? `<p><strong>Descripción:</strong> ${escaparHTML(evento.descripcion)}</p>` : ''}
+        ${presupuesto ? `<p><strong>Presupuesto:</strong> ${escaparHTML(presupuesto)}</p>` : ''}
         <p>Se adjunta un archivo .ics para agregar el evento a tu calendario.</p>
       </div>
     `;
@@ -261,7 +310,11 @@ app.post('/api/enviar-invitacion', limiterInvitaciones, async (req, res) => {
         attachments: [
           {
             filename: 'evento.ics',
-            content: icsBase64
+            content: icsBase64,
+            // Declarar el tipo como text/calendar con METHOD=REQUEST hace que
+            // Gmail/Google Calendar muestren la tarjeta RSVP y agreguen el evento,
+            // en vez de tratarlo como un adjunto genérico descargable.
+            contentType: 'text/calendar; method=REQUEST; charset=utf-8'
           }
         ]
       })

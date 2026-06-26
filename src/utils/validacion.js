@@ -122,6 +122,37 @@ export const validarEvento = (datos) => {
     }
   }
 
+  // --- recurrencia (opcional) ---
+  // null/undefined o {tipo:'none'} => no se repite (valido). Si se repite,
+  // validamos tipo, intervalo y la fecha de fin opcional.
+  const recur = d.recurrencia
+  if (recur && typeof recur === 'object' && recur.tipo && recur.tipo !== 'none') {
+    const tiposValidos = ['diaria', 'semanal', 'mensual', 'anual', 'personalizada']
+    if (!tiposValidos.includes(recur.tipo)) {
+      errores.recurrencia = 'El tipo de repeticion no es valido.'
+    } else if (recur.tipo === 'personalizada') {
+      const intervalo = Number(recur.intervalo)
+      const unidadesValidas = ['dia', 'semana', 'mes', 'anio']
+      if (!Number.isFinite(intervalo) || intervalo < 1 || !Number.isInteger(intervalo)) {
+        errores.recurrencia = 'El intervalo de repeticion debe ser un numero entero de 1 o mas.'
+      } else if (!unidadesValidas.includes(recur.unidad)) {
+        errores.recurrencia = 'La unidad de repeticion no es valida.'
+      }
+    }
+    // Fecha de fin opcional: si existe, debe ser valida y no anterior al inicio.
+    if (!errores.recurrencia && recur.hasta) {
+      const hasta = new Date(recur.hasta)
+      if (Number.isNaN(hasta.getTime())) {
+        errores.recurrencia = 'La fecha de fin de la repeticion no es valida.'
+      } else if (tieneInicio) {
+        const inicio = new Date(d.fechaInicio)
+        if (!Number.isNaN(inicio.getTime()) && hasta.getTime() < inicio.getTime()) {
+          errores.recurrencia = 'La repeticion no puede terminar antes de empezar.'
+        }
+      }
+    }
+  }
+
   return {
     valido: Object.keys(errores).length === 0,
     errores,

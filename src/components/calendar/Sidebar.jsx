@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCalendario } from '../../context/CalendarioContext'
 import { useAuth } from '../../context/AuthContext'
 import { puedeEditar } from '../../utils/permisos'
 import { Plus, ChevronLeft, ChevronRight, MoreVertical, Eye, Trash2, Check, AlertTriangle } from 'lucide-react'
 import { spring, menuVariants, staggerContainer, fadeUpItem, tap, tapSoft, scrimVariants, popVariants } from '../../lib/motion'
+import SelectorColor from '../common/SelectorColor'
 
 const DIAS_MINI = ['D', 'L', 'M', 'X', 'J', 'V', 'S']
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -21,7 +23,7 @@ const MENU_ALTO_ADMIN = 230
 const MENU_ALTO_BASE = 56
 const MENU_GAP = 6
 
-function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnterior, onMesSiguiente }) {
+function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnterior, onMesSiguiente, onCerrarMobile }) {
   const hoy = new Date()
   const {
     eventos,
@@ -155,20 +157,20 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
 
       {/* Botón Crear — SOLO admin. */}
       {puedeGestionar && (
-        <div className="px-6 mb-6">
+        <div className="px-3 mb-6">
           <motion.button
-            onClick={onCrearEvento}
+            onClick={() => { onCrearEvento(); onCerrarMobile?.() }}
             whileTap={tap}
-            className="inline-flex items-center justify-center gap-2 px-5 min-h-[44px] rounded-[var(--radius-md)] bg-[var(--accent-color)] text-[var(--accent-contrast)] text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]"
+            className="inline-flex w-full items-center justify-center gap-2 px-5 min-h-[48px] rounded-[var(--radius-md)] bg-[var(--accent-color)] text-[var(--accent-contrast)] text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]"
           >
             <Plus size={20} />
-            <span>Crear</span>
+            <span className="text-base">Crear</span>
           </motion.button>
         </div>
       )}
 
-      {/* Mini calendario */}
-      <div className="mb-6 px-6">
+      {/* Mini calendario — oculto en celular (ocupa mucho; redundante ahí). */}
+      <div className="hidden sm:block mb-6 px-3">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-semibold tracking-tight text-[var(--text-primary)]">
             {MESES[mesActual]} {anioActual}
@@ -224,7 +226,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
       </div>
 
       {/* Sección Mis Calendarios */}
-      <div className="flex flex-col gap-2 px-6">
+      <div className="flex flex-col gap-2 px-3">
         <div className="flex items-center justify-between mb-1 px-1">
           <span className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Mis calendarios</span>
           {/* Añadir calendario — SOLO admin. */}
@@ -260,39 +262,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                   className="linear-input text-sm"
                   autoFocus
                 />
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {COLORES.map(color => (
-                    <motion.button
-                      key={color}
-                      type="button"
-                      onClick={() => setNuevoColor(color)}
-                      whileHover={{ y: -1 }}
-                      whileTap={tapSoft}
-                      aria-label={`Elegir color ${color}`}
-                      className={`w-6 h-6 rounded-full transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]
-                        ${nuevoColor === color ? 'ring-2 ring-offset-2 ring-[var(--accent-color)] ring-offset-[var(--bg-secondary)]' : ''}`}
-                      style={{ backgroundColor: color }}
-                    >
-                      {nuevoColor === color && <Check size={14} className="text-white" />}
-                    </motion.button>
-                  ))}
-
-                  {/* Selector de color libre: abre la paleta nativa del SO. */}
-                  <label
-                    className="relative w-7 h-7 rounded-[var(--radius-sm)] border border-[var(--border-color)] cursor-pointer overflow-hidden flex-shrink-0 transition-colors hover:border-[var(--text-tertiary)] focus-within:shadow-[var(--ring-accent)]"
-                    style={{ backgroundColor: nuevoColor }}
-                    title="Elegir color personalizado"
-                    aria-label="Elegir color personalizado"
-                  >
-                    <input
-                      type="color"
-                      value={nuevoColor}
-                      onChange={(e) => setNuevoColor(e.target.value)}
-                      aria-label="Elegir color personalizado"
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                  </label>
-                </div>
+                <SelectorColor value={nuevoColor} onChange={setNuevoColor} size={24} />
                 <div className="flex gap-2 justify-end mt-1">
                   <motion.button
                     type="button"
@@ -305,7 +275,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                   <motion.button
                     type="submit"
                     whileTap={tap}
-                    className="inline-flex items-center justify-center gap-2 px-5 min-h-[44px] bg-[var(--accent-color)] text-[var(--accent-contrast)] rounded-[var(--radius-md)] text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]"
+                    className="inline-flex items-center justify-center gap-2 px-6 min-w-[100px] min-h-[40px] bg-[var(--accent-color)] text-[var(--accent-contrast)] rounded-[var(--radius-md)] text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]"
                   >
                     Crear
                   </motion.button>
@@ -329,7 +299,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
               variants={fadeUpItem}
               exit={{ opacity: 0, height: 0, marginTop: 0, transition: spring }}
               whileHover={{ backgroundColor: 'var(--hover-color)' }}
-              className="dots-menu-container flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-md)] cursor-pointer group transition-colors relative"
+              className="dots-menu-container flex items-center gap-2 px-2 py-1 rounded-[var(--radius-md)] cursor-pointer group transition-colors relative"
               onClick={() => toggleCalendarioVisible(cal.id)}
               role="checkbox"
               aria-checked={cal.visible}
@@ -354,13 +324,16 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                 whileTap={tapSoft}
                 aria-label={`Opciones de ${cal.nombre}`}
                 aria-haspopup="menu"
-                className={`inline-flex items-center justify-center h-8 w-8 rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)] ${menuAbiertoId === cal.id ? 'opacity-100' : ''}`}
+                className={`relative z-10 inline-flex flex-shrink-0 items-center justify-center h-8 w-8 rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)] ${menuAbiertoId === cal.id ? 'opacity-100' : ''}`}
               >
                 <MoreVertical size={16} />
               </motion.button>
 
-              {/* Menú contextual — fixed para evitar recortes por overflow. */}
-              <AnimatePresence>
+              {/* Menú contextual — fixed para evitar recortes por overflow.
+                  El portal DEBE envolver a AnimatePresence (no al revés):
+                  AnimatePresence no rastrea un createPortal crudo como hijo. */}
+              {createPortal(
+                <AnimatePresence>
                 {menuAbiertoId === cal.id && (
                   <motion.div
                     role="menu"
@@ -368,7 +341,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    className="fixed-menu fixed bg-[var(--bg-primary)] rounded-[var(--radius-lg)] z-[9999] w-60 py-2 border border-[var(--border-color)] shadow-[var(--shadow-lg)]"
+                    className="fixed-menu fixed bg-[var(--bg-primary)] rounded-[var(--radius-lg)] z-[9999] w-60 p-1.5 border border-[var(--border-color)] shadow-[var(--shadow-lg)]"
                     style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px`, transformOrigin: menuPos.origin }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -376,7 +349,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                     <button
                       role="menuitem"
                       onClick={(e) => { e.stopPropagation(); verSoloEsteCalendario(cal.id); setMenuAbiertoId(null) }}
-                      className="w-full text-left px-4 min-h-[40px] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--hover-color)]"
+                      className="w-full text-left px-4 min-h-[40px] rounded-[var(--radius-md)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--hover-color)]"
                     >
                       <Eye size={18} className="text-[var(--text-secondary)] flex-shrink-0" />
                       Ver solo este
@@ -385,45 +358,19 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                     {/* Colores y eliminar — SOLO admin. */}
                     {puedeGestionar && (
                       <>
-                        <div className="px-4 py-3 flex flex-wrap items-center gap-2.5 border-t border-b border-[var(--border-color)] my-1">
-                          {COLORES.map(color => (
-                            <motion.button
-                              key={color}
-                              onClick={(e) => { e.stopPropagation(); cambiarColorCalendario(cal.id, color) }}
-                              whileHover={{ y: -1 }}
-                              whileTap={tapSoft}
-                              aria-label={`Cambiar color a ${color}`}
-                              className={`w-5 h-5 rounded-full cursor-pointer transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]
-                                ${cal.color === color ? 'ring-2 ring-offset-2 ring-[var(--accent-color)] ring-offset-[var(--bg-primary)]' : ''}`}
-                              style={{ backgroundColor: color }}
-                            >
-                              {cal.color === color && <Check size={11} className="text-white" strokeWidth={3} />}
-                            </motion.button>
-                          ))}
-
-                          {/* Selector de color libre: recolorea con cualquier color del SO. */}
-                          <label
-                            className="relative w-6 h-6 rounded-[var(--radius-sm)] border border-[var(--border-color)] cursor-pointer overflow-hidden flex-shrink-0 transition-colors hover:border-[var(--text-tertiary)] focus-within:shadow-[var(--ring-accent)]"
-                            style={{ backgroundColor: cal.color }}
-                            title="Elegir color personalizado"
-                            aria-label="Elegir color personalizado"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="color"
-                              value={cal.color}
-                              onChange={(e) => { e.stopPropagation(); cambiarColorCalendario(cal.id, e.target.value) }}
-                              aria-label="Elegir color personalizado"
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                          </label>
+                        <div className="px-4 py-3 border-t border-b border-[var(--border-color)] my-1">
+                          <SelectorColor
+                            value={cal.color}
+                            onChange={(c) => cambiarColorCalendario(cal.id, c)}
+                            size={20}
+                          />
                         </div>
 
                         <motion.button
                           role="menuitem"
                           onClick={(e) => { e.stopPropagation(); handlePedirEliminar(cal) }}
                           whileTap={tapSoft}
-                          className="w-full text-left px-4 min-h-[40px] text-sm font-medium text-[var(--danger-color)] hover:bg-[var(--danger-soft)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--danger-soft)]"
+                          className="w-full text-left px-4 min-h-[40px] rounded-[var(--radius-md)] text-sm font-medium text-[var(--danger-color)] hover:bg-[var(--danger-soft)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--danger-soft)]"
                         >
                           <Trash2 size={18} className="flex-shrink-0" />
                           Eliminar calendario
@@ -432,7 +379,9 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                     )}
                   </motion.div>
                 )}
-              </AnimatePresence>
+                </AnimatePresence>,
+                document.body
+              )}
             </motion.div>
           ))}
           </AnimatePresence>
@@ -462,7 +411,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                 animate="animate"
                 exit="exit"
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] p-5 flex flex-col gap-4 text-[var(--text-primary)]"
+                className="w-full max-w-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] p-6 flex flex-col gap-4 text-[var(--text-primary)]"
               >
                 <div className="flex items-start gap-3">
                   <span className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-[var(--danger-soft)] text-[var(--danger-color)]">
@@ -492,7 +441,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                     onClick={handleConfirmarEliminar}
                     whileTap={tap}
                     autoFocus
-                    className="inline-flex items-center justify-center gap-2 px-5 min-h-[44px] text-sm font-medium text-white bg-[var(--danger-color)] rounded-[var(--radius-md)] transition-[filter,transform] hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]"
+                    className="inline-flex items-center justify-center gap-2 px-5 min-h-[48px] text-sm font-medium text-white bg-[var(--danger-color)] rounded-[var(--radius-md)] transition-[filter,transform] hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]"
                   >
                     <Trash2 size={18} />
                     Eliminar

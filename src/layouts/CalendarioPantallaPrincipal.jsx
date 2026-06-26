@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { useCalendario } from '../context/CalendarioContext'
@@ -22,7 +22,10 @@ function CalendarioPantallaPrincipal() {
 
   const [mesActual, setMesActual] = useState(hoy.getMonth())
   const [anioActual, setAnioActual] = useState(hoy.getFullYear())
-  const [sidebarVisible, setSidebarVisible] = useState(true)
+  // En celular el panel arranca cerrado (se abre con el ☰ como cajón).
+  const [sidebarVisible, setSidebarVisible] = useState(
+    () => (typeof window !== 'undefined' ? window.innerWidth >= 640 : true)
+  )
   const [vistaActual, setVistaActual] = useState('mes')
   const [diaSeleccionado, setDiaSeleccionado] = useState(hoy.getDate())
   const [modalVisible, setModalVisible] = useState(false)
@@ -70,20 +73,45 @@ function CalendarioPantallaPrincipal() {
     setDiaSeleccionado(hoy.getDate())
   }
 
-  // Click en un día: selecciona el día siempre (navegación de vista),
-  // pero SOLO abre el modal de creación si el usuario puede gestionar.
-  const handleDiaClick = (dia) => {
-    setDiaSeleccionado(dia)
+  // Click simple en un día → abre la vista Día de ESE día.
+  // Doble click → crea un evento en ese día.
+  const irAVistaDia = (dia, mes, anio) => {
+    setDiaSeleccionado(dia); setMesActual(mes); setAnioActual(anio)
+    setVistaActual('dia')
+  }
+  const crearEnDia = (dia, mes, anio) => {
+    setDiaSeleccionado(dia); setMesActual(mes); setAnioActual(anio)
     if (!puedeGestionar) return
-    setFechaParaNuevoEvento(formatYMD(anioActual, mesActual, dia))
+    setFechaParaNuevoEvento(formatYMD(anio, mes, dia))
     setEventoAEditar(null)
     setModalVisible(true)
+  }
+  // Un dblclick dispara también 2 onClick; discriminamos con un timer y un ref
+  // que recuerda el último día tocado (para no confundir clicks en días distintos).
+  const clickDiaRef = useRef({ timer: null, clave: null })
+  const handleDiaClick = (dia, mes = mesActual, anio = anioActual) => {
+    const r = clickDiaRef.current
+    const clave = `${anio}-${mes}-${dia}`
+    if (r.timer && r.clave === clave) {
+      clearTimeout(r.timer); r.timer = null; r.clave = null
+      crearEnDia(dia, mes, anio)
+    } else {
+      if (r.timer) clearTimeout(r.timer)
+      r.clave = clave
+      r.timer = setTimeout(() => {
+        r.timer = null; r.clave = null
+        irAVistaDia(dia, mes, anio)
+      }, 220)
+    }
   }
 
   const handleCrearEvento = () => {
     if (!puedeGestionar) return
-    const d = new Date()
-    setFechaParaNuevoEvento(formatYMD(d.getFullYear(), d.getMonth(), d.getDate()))
+    // En vista Día creamos en el día mostrado; en el resto, hoy.
+    const base = vistaActual === 'dia'
+      ? { y: anioActual, m: mesActual, d: diaSeleccionado }
+      : (() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth(), d: t.getDate() } })()
+    setFechaParaNuevoEvento(formatYMD(base.y, base.m, base.d))
     setEventoAEditar(null)
     setModalVisible(true)
   }
@@ -116,14 +144,26 @@ function CalendarioPantallaPrincipal() {
       />
       <div className="flex flex-1 min-w-0 overflow-hidden">
         {sidebarVisible && (
-          <Sidebar
-            mesActual={mesActual}
-            anioActual={anioActual}
-            onDiaClick={handleDiaClick}
-            onCrearEvento={handleCrearEvento}
-            onMesAnterior={irMesAnterior}
-            onMesSiguiente={irMesSiguiente}
-          />
+          <>
+            {/* Backdrop: solo celular, cierra el cajón al tocar afuera. */}
+            <div
+              className="fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm sm:hidden"
+              onClick={() => setSidebarVisible(false)}
+              aria-hidden="true"
+            />
+            {/* En celular el panel es un cajón superpuesto; en sm+ es columna fija. */}
+            <div className="fixed inset-y-0 left-0 z-[60] flex shadow-2xl sm:static sm:z-auto sm:shadow-none">
+              <Sidebar
+                mesActual={mesActual}
+                anioActual={anioActual}
+                onDiaClick={handleDiaClick}
+                onCrearEvento={handleCrearEvento}
+                onMesAnterior={irMesAnterior}
+                onMesSiguiente={irMesSiguiente}
+                onCerrarMobile={() => { if (window.innerWidth < 640) setSidebarVisible(false) }}
+              />
+            </div>
+          </>
         )}
         <GrillaCalendario
           mesActual={mesActual}

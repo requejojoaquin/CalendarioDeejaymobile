@@ -99,7 +99,7 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
   }
 
   return (
-    <div className="flex items-center gap-4 px-4 sm:px-6 h-16 flex-shrink-0 relative border-b border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200">
+    <div className="flex items-center gap-2 sm:gap-4 pl-3 pr-4 sm:pl-5 sm:pr-6 h-16 flex-shrink-0 relative border-b border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200">
 
       <motion.button
         whileTap={tap}
@@ -109,17 +109,16 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
       >
         <Menu size={20} />
       </motion.button>
-
-      <div className="flex items-center gap-3">
-        <span className="hidden sm:flex items-center gap-2 text-[15px] font-semibold tracking-tight">
-          <CalendarDays size={18} className="text-[var(--accent-color)]" />
+      <div className="flex items-center gap-5">
+        <span className="hidden sm:flex items-center gap-2 text-[18px] font-semibold tracking-tight">
+          <CalendarDays size={25} className="text-[var(--accent-color)]" />
           CalendarMobile
         </span>
 
         <motion.button
           whileTap={tap}
           onClick={onHoy}
-          className={`${btnBase} h-11 px-4 border border-[var(--border-color)] text-sm font-medium bg-[var(--bg-primary)] hover:bg-[var(--hover-color)]`}
+          className={`${btnBase} hidden sm:inline-flex h-11 w-20 px-8 ml-1 sm:ml-1 border border-[var(--border-color)] text-sm font-medium bg-[var(--bg-primary)] hover:bg-[var(--hover-color)]`}
         >
           Hoy
         </motion.button>
@@ -240,7 +239,7 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
               aria-selected={activo}
               whileTap={tap}
               onClick={() => onCambiarVista(v.id)}
-              className={`relative h-full px-4 inline-flex items-center justify-center text-sm font-medium rounded-[var(--radius-sm)] transition-colors focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]
+              className={`relative h-full px-5 min-w-[76px] inline-flex items-center justify-center text-sm font-medium rounded-[var(--radius-sm)] transition-colors focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)]
                 ${activo
                   ? 'text-[var(--accent-contrast)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-color)]'}`}
@@ -291,7 +290,7 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
               animate="animate"
               exit="exit"
             >
-              <motion.div variants={staggerContainer} initial="initial" animate="animate" className="flex flex-col">
+              <motion.div variants={staggerContainer} initial="initial" animate="animate" className="flex flex-col p-1.5 space-y-1">
                 <motion.button
                   variants={fadeUpItem}
                   role="menuitem"
@@ -299,7 +298,7 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
                     setShowAspectoModal(true)
                     setShowSettingsMenu(false)
                   }}
-                  className="px-4 py-2.5 text-sm font-medium flex items-center gap-3 hover:bg-[var(--hover-color)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--hover-color)] text-[var(--text-primary)]"
+                  className="rounded-md px-4 min-h-[40px] text-sm font-medium flex items-center gap-3 hover:bg-[var(--hover-color)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--hover-color)] text-[var(--text-primary)]"
                 >
                   <Palette size={18} className="text-[var(--accent-color)] flex-shrink-0" />
                   Aspecto
@@ -314,7 +313,7 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
                       onAbrirPapelera()
                       setShowSettingsMenu(false)
                     }}
-                    className="px-4 py-2.5 text-sm font-medium flex items-center gap-3 hover:bg-[var(--hover-color)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--hover-color)] text-[var(--text-primary)]"
+                    className="rounded-md px-4 min-h-[40px] text-sm font-medium flex items-center gap-3 hover:bg-[var(--hover-color)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--hover-color)] text-[var(--text-primary)]"
                   >
                     <Trash2 size={18} className="text-[var(--text-secondary)] flex-shrink-0" />
                     Papelera
@@ -326,7 +325,7 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
                   variants={fadeUpItem}
                   role="menuitem"
                   onClick={handleLogout}
-                  className="mt-1.5 pt-3 pb-2.5 px-4 text-sm font-medium flex items-center gap-3 border-t border-[var(--border-color)] hover:bg-[var(--danger-soft)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--danger-soft)] text-[var(--danger-color)]"
+                  className="mt-1.5 px-4 min-h-[40px] rounded-md text-sm font-medium flex items-center gap-3 border-t border-[var(--border-color)] hover:bg-[var(--danger-soft)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--danger-soft)] text-[var(--danger-color)]"
                 >
                   <LogOut size={18} className="text-[var(--danger-color)] flex-shrink-0" />
                   Cerrar sesión

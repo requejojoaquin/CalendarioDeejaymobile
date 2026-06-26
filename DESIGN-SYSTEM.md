@@ -20,9 +20,17 @@
 - Cuerpo 14px / line-height 1.5. Captions 12–13px `text-[var(--text-secondary)]`.
 - Cifras tabulares para horas: `tabular-nums`.
 
-## Espaciado (grid 4px) y layout
+## Espaciado (grid 8px) y layout
+- **Formularios y modales: grilla de 8px (innegociable).** Todo padding/margin/gap y alto de control es múltiplo de 8 (`8·16·24·32·48·64`). El sub-paso de 4px queda reservado para detalles densos (gap icono↔label, offsets ópticos). **Prohibidos los valores fuera de retícula** (6/10/14/20/28px → `gap-1.5`/`gap-2.5`/`px-3.5`/`p-5`/`space-y-7`). Alto de inputs y botones primarios: `min-h-[48px]`; controles secundarios `min-h-[40px]`.
+- *Content-hugging:* cada grupo de campos respira en el mismo ritmo (24px entre grupos · 16px interno · 8px label→campo). Nada de tightness arbitraria.
+- Chrome de alta frecuencia (grilla del calendario, mini-mes): puede usar el sub-paso de 4px por densidad.
 - Sidebar `w-64` (NO `w-80`). Header `h-16` con `px-4`/`px-6`, gaps `gap-2`/`gap-3`/`gap-4` coherentes.
 - Densidad cómoda. Sin `gap` por defecto accidental; alineación deliberada.
+
+## Recurrencia ("Repetir evento")
+- Desplegable en `ModalEvento` debajo de la hora. **Reusa `menuVariants`** (mismo patrón de dropdown que invitados/ubicación) — no inventar animaciones nuevas. Icono `Repeat` (lucide) en la columna de iconos.
+- Motor PURO en `src/utils/recurrencia.js` (expande al vuelo, sin duplicar docs en Firestore). La grilla pregunta vía `ocurreEnFecha(ev, fechaKey)` en un único predicado `eventoEnFecha` → las 4 vistas heredan recurrencia.
+- Modelo: `evento.recurrencia = null | { tipo, intervalo, unidad?, hasta }`.
 
 ## Motion (restraint — Emil Kowalski / productividad)
 - **Grilla, navegación de mes, hover de celdas: SIN animación** o solo `transition-colors duration-100`. Es alta frecuencia → instantáneo.

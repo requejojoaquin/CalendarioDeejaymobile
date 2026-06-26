@@ -29,7 +29,7 @@ function ModalAspecto({ onClose }) {
       exit="exit"
     >
       <motion.div
-        className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-lg)] w-full max-w-[500px] overflow-hidden flex flex-col"
+        className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-lg)] w-full max-w-[440px] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         variants={popVariants}
         initial="initial"
@@ -37,7 +37,7 @@ function ModalAspecto({ onClose }) {
         exit="exit"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-color)]">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--border-color)]">
           <h2 className="text-base font-semibold text-[var(--text-primary)]">Aspecto</h2>
           <motion.button
             whileTap={tap}
@@ -50,23 +50,23 @@ function ModalAspecto({ onClose }) {
         </div>
 
         {/* Contenido */}
-        <div className="p-8">
-          <p className="text-sm text-[var(--text-secondary)] mb-8">
+        <div className="px-6 py-3">
+          <p className="text-sm text-[var(--text-secondary)] mb-2">
             Elige cómo quieres que se vea el calendario. Los colores de tus eventos se mantendrán igual.
           </p>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-2">
             {/* Opción Claro */}
             <motion.button
               type="button"
               aria-pressed={!esOscuro}
               whileHover={hoverLift}
               whileTap={tapSoft}
-              className="group cursor-pointer flex flex-col items-center gap-4 transition-colors focus:outline-none rounded-xl"
+              className="group cursor-pointer flex flex-col items-center gap-2 transition-colors focus:outline-none rounded-xl"
               onClick={() => setEsOscuro(false)}
             >
               <div
-                className={`relative w-full aspect-video rounded-xl border overflow-hidden transition-colors ${
+                className={`relative w-full aspect-[5/4] rounded-xl border overflow-hidden transition-colors ${
                   !esOscuro
                     ? 'border-[var(--accent-color)] ring-2 ring-[var(--accent-soft)]'
                     : 'border-[var(--border-color)] group-hover:border-[var(--text-tertiary)] group-focus-visible:border-[var(--accent-color)]'
@@ -120,11 +120,11 @@ function ModalAspecto({ onClose }) {
               aria-pressed={esOscuro}
               whileHover={hoverLift}
               whileTap={tapSoft}
-              className="group cursor-pointer flex flex-col items-center gap-4 transition-colors focus:outline-none rounded-xl"
+              className="group cursor-pointer flex flex-col items-center gap-2 transition-colors focus:outline-none rounded-xl"
               onClick={() => setEsOscuro(true)}
             >
               <div
-                className={`relative w-full aspect-video rounded-xl border overflow-hidden transition-colors ${
+                className={`relative w-full aspect-[5/4] rounded-xl border overflow-hidden transition-colors ${
                   esOscuro
                     ? 'border-[var(--accent-color)] ring-2 ring-[var(--accent-soft)]'
                     : 'border-[var(--border-color)] group-hover:border-[var(--text-tertiary)] group-focus-visible:border-[var(--accent-color)]'
@@ -175,11 +175,11 @@ function ModalAspecto({ onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-[var(--bg-secondary)] flex justify-end border-t border-[var(--border-color)]">
+        <div className="px-6 py-3 bg-[var(--bg-secondary)] flex justify-end border-t border-[var(--border-color)]">
           <motion.button
             whileTap={tap}
             onClick={onClose}
-            className="inline-flex items-center justify-center px-5 min-h-[44px] bg-[var(--accent-color)] text-[var(--accent-contrast)] text-sm font-medium rounded-[var(--radius-md)] hover:bg-[var(--accent-hover)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
+            className="inline-flex items-center justify-center gap-2 px-6 min-w-[80px] min-h-[36px] whitespace-nowrap bg-[var(--accent-color)] text-[var(--accent-contrast)] text-sm font-medium rounded-[var(--radius-md)] hover:bg-[var(--accent-hover)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-color)]"
           >
             Listo
           </motion.button>

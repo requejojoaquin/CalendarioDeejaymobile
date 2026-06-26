@@ -40,9 +40,9 @@
   --warning-color: #f9ab00;     /* Avisos */
 
   /* --- Radios --- */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 11px;
   --radius-full: 9999px;
 
   /* --- Sombras (suaves, estilo Calendar) --- */
@@ -109,10 +109,16 @@
 /* ============================================================
    RESET + BASE
    ============================================================ */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* DEBE ir en @layer base: sin capa, este reset universal pisa TODAS las
+   utilidades px-*/py-*/m-* de Tailwind v4 (CSS sin capa > @layer utilities),
+   dejando todos los formularios y modales sin padding. Dentro de base, las
+   utilidades (capa posterior) ganan y el reset solo aplica donde no hay clase. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 }
 
 html {
@@ -341,9 +347,9 @@ a:hover { color: var(--accent-hover); }
   --color-success: var(--success-color);
   --color-warning: var(--warning-color);
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 11px;
 
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
