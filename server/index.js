@@ -209,6 +209,63 @@ function generarICS(evento, invitados, organizador, presupuesto) {
 // Regex de email razonable, igual criterio que el del frontend.
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Consulta un registro DNS vía DNS-over-HTTPS (Google Public DNS). Usamos
+// HTTPS en vez de una consulta UDP cruda (node:dns) porque muchas redes
+// corporativas/firewalls bloquean DNS crudo pero sí dejan pasar HTTPS: así
+// el chequeo funciona en más entornos, incluido el del propio usuario.
+async function consultarDNS(dominio, tipo) {
+  const resp = await fetch(
+    `https://dns.google/resolve?name=${encodeURIComponent(dominio)}&type=${tipo}`,
+    { signal: AbortSignal.timeout(3000) }
+  );
+  if (!resp.ok) throw new Error(`DNS-over-HTTPS respondió ${resp.status}`);
+  return resp.json();
+}
+
+// Devuelve true/false si pudo determinar que el dominio recibe correo, o
+// null si no pudo verificar (timeout, red caída): en ese caso no bloqueamos.
+async function existeDominioDeCorreo(dominio) {
+  try {
+    const mx = await consultarDNS(dominio, 'MX');
+    if (mx.Status === 0 && Array.isArray(mx.Answer) && mx.Answer.length > 0) return true;
+    if (mx.Status === 3) return false; // NXDOMAIN: el dominio no existe.
+    // Sin MX: algunos dominios chicos reciben mail solo vía registro A/AAAA.
+    const a = await consultarDNS(dominio, 'A');
+    return a.Status === 0 && Array.isArray(a.Answer) && a.Answer.length > 0;
+  } catch (error) {
+    console.error('Error verificando dominio de email:', error);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/verificar-email
+// No existe forma confiable ni ética de confirmar que UNA casilla puntual
+// "existe de verdad" sin mandarle un mail real (probing SMTP es abusivo, lo
+// bloquean casi todos los proveedores, y da falsos positivos/negativos) ni
+// sin pagar un servicio externo de verificación (requiere alta y API key
+// del usuario). Lo que sí podemos chequear gratis y sin tocar datos de
+// terceros: 1) el FORMATO del email, 2) si el DOMINIO tiene registros
+// MX/A que indiquen que puede recibir correo (consulta DNS pública, igual
+// a la que hace cualquier servidor de mail — no es un dato personal).
+// ---------------------------------------------------------------------------
+app.get('/api/verificar-email', async (req, res) => {
+  const { email } = req.query;
+  if (typeof email !== 'string' || email.length === 0 || email.length > 254) {
+    return res.status(400).json({ error: 'El parámetro "email" es obligatorio.' });
+  }
+
+  const limpio = email.trim();
+  const formatoValido = REGEX_EMAIL.test(limpio);
+  if (!formatoValido) {
+    return res.json({ formatoValido: false, dominioExiste: false });
+  }
+
+  const dominio = limpio.split('@')[1].toLowerCase();
+  const dominioExiste = await existeDominioDeCorreo(dominio);
+  return res.json({ formatoValido: true, dominioExiste });
+});
+
 // ---------------------------------------------------------------------------
 // POST /api/enviar-invitacion
 // Genera un .ics del evento y lo manda por email a los invitados vía Resend.

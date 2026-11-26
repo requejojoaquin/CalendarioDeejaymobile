@@ -169,30 +169,57 @@ export const CalendarioProvider = ({ children }) => {
     [rol, presupuestos]
   )
 
-  // Calendarios expuestos: los de Firestore mergeados con la visibilidad local.
-  // Por defecto un calendario es visible si no hay preferencia guardada.
-  const calendarios = calendariosRaw.map((c) => ({
-    ...c,
-    visible: visibles[c.id] !== undefined ? visibles[c.id] : true
-  }))
+  // Privacidad por dueño (client-side, "visual"): un calendario privado solo lo
+  // ve su propietario (uid); los públicos los ven todos. La seguridad REAL a
+  // nivel de reglas/API se hará más adelante (deploy); esto oculta en la app.
+  const uid = usuario?.uid || null
+  const puedeVerCalendario = (c) => c.privado !== true || c.propietario === uid
 
-  // Eventos activos (incluye los legacy sin `estado`, tratados como activos).
-  const eventos = eventosRaw.filter((e) => e.estado !== 'papelera')
-  // Eventos en papelera.
-  const eventosPapelera = eventosRaw.filter((e) => e.estado === 'papelera')
+  // Un evento se oculta si pertenece a un calendario privado ajeno. Un evento
+  // sin calendario conocido no se oculta (no rompemos legacy/huérfanos).
+  const calById = new Map(calendariosRaw.map((c) => [c.id, c]))
+  const eventoVisiblePorPrivacidad = (e) => {
+    const c = calById.get(e.calendarioId)
+    return !c || puedeVerCalendario(c)
+  }
+
+  // Calendarios expuestos: solo los visibles para este usuario, mergeados con la
+  // visibilidad local (mostrar/ocultar en la grilla, eje distinto a privacidad).
+  const calendarios = calendariosRaw
+    .filter(puedeVerCalendario)
+    .map((c) => ({
+      ...c,
+      visible: visibles[c.id] !== undefined ? visibles[c.id] : true
+    }))
+
+  // Eventos activos (incluye los legacy sin `estado`). Oculta los de calendarios
+  // privados ajenos.
+  const eventos = eventosRaw.filter(
+    (e) => e.estado !== 'papelera' && eventoVisiblePorPrivacidad(e)
+  )
+  // Eventos en papelera (también respetan la privacidad del calendario).
+  const eventosPapelera = eventosRaw.filter(
+    (e) => e.estado === 'papelera' && eventoVisiblePorPrivacidad(e)
+  )
 
   // ==========================================================================
   // CALENDARIOS
   // ==========================================================================
 
-  const agregarCalendario = useCallback(async ({ nombre, color }) => {
+  const agregarCalendario = useCallback(async ({ nombre, color, privado = false }) => {
     if (!esAdmin(rol)) return
     try {
-      await addDoc(collection(db, 'calendarios'), { nombre, color })
+      await addDoc(collection(db, 'calendarios'), {
+        nombre,
+        color,
+        // Privacidad por dueño: si es privado, guardamos quién lo posee (uid).
+        privado: !!privado,
+        propietario: usuario?.uid || null
+      })
     } catch (error) {
       console.error('Error al agregar calendario:', error)
     }
-  }, [rol])
+  }, [rol, usuario])
 
   const cambiarColorCalendario = useCallback(async (id, color) => {
     if (!esAdmin(rol)) return
@@ -202,6 +229,21 @@ export const CalendarioProvider = ({ children }) => {
       console.error('Error al cambiar color del calendario:', error)
     }
   }, [rol])
+
+  // Cambia la privacidad de un calendario. Al hacerlo privado, su propietario
+  // pasa a ser el admin actual (uid): solo él lo verá. Al hacerlo público vuelve
+  // a ser visible para todos. Solo admin. (Enforcement real = futuras reglas.)
+  const cambiarPrivacidadCalendario = useCallback(async (id, privado) => {
+    if (!esAdmin(rol)) return
+    try {
+      await updateDoc(doc(db, 'calendarios', id), {
+        privado: !!privado,
+        propietario: usuario?.uid || null
+      })
+    } catch (error) {
+      console.error('Error al cambiar privacidad del calendario:', error)
+    }
+  }, [rol, usuario])
 
   // Alterna la visibilidad de un calendario (solo localStorage + estado local).
   const toggleCalendarioVisible = useCallback((id) => {
@@ -273,7 +315,10 @@ export const CalendarioProvider = ({ children }) => {
       // Recreamos el calendario con su mismo id.
       await setDoc(doc(db, 'calendarios', data.id), {
         nombre: data.nombre,
-        color: data.color
+        color: data.color,
+        // Preservamos la privacidad al restaurar (data es el snapshot del cal).
+        privado: data.privado ?? false,
+        propietario: data.propietario ?? null
       })
       // Restauramos el estado previo de los eventos afectados.
       const batch = writeBatch(db)
@@ -566,6 +611,7 @@ export const CalendarioProvider = ({ children }) => {
       // --- Calendarios ---
       agregarCalendario,
       cambiarColorCalendario,
+      cambiarPrivacidadCalendario,
       toggleCalendarioVisible,
       verSoloEsteCalendario,
       eliminarCalendario,

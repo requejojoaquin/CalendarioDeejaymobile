@@ -59,6 +59,7 @@ function HeaderCalendario({ mesActual, anioActual, onHoy, onAnterior, onSiguient
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowSuggestions(false)
+        setSearchTerm('')
       }
       if (settingsRef.current && !settingsRef.current.contains(event.target)) {
         setShowSettingsMenu(false)

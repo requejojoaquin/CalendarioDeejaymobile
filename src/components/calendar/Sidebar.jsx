@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCalendario } from '../../context/CalendarioContext'
 import { useAuth } from '../../context/AuthContext'
 import { puedeEditar } from '../../utils/permisos'
-import { Plus, ChevronLeft, ChevronRight, MoreVertical, Eye, Trash2, Check, AlertTriangle } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, MoreVertical, Eye, Trash2, Check, AlertTriangle, Lock, Unlock } from 'lucide-react'
 import { spring, menuVariants, staggerContainer, fadeUpItem, tap, tapSoft, scrimVariants, popVariants } from '../../lib/motion'
 import SelectorColor from '../common/SelectorColor'
 
@@ -19,7 +19,7 @@ const COLORES = ['#1a73e8', '#d50000', '#33b679', '#f4511e', '#8e24aa', '#f6bf26
 // salga del viewport. El ancho coincide con la clase `w-60` (240px). El alto
 // depende del rol: admin ve swatches de color + "Eliminar".
 const MENU_ANCHO = 240
-const MENU_ALTO_ADMIN = 230
+const MENU_ALTO_ADMIN = 285
 const MENU_ALTO_BASE = 56
 const MENU_GAP = 6
 
@@ -32,6 +32,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
     agregarCalendario,
     verSoloEsteCalendario,
     cambiarColorCalendario,
+    cambiarPrivacidadCalendario,
     eliminarCalendario
   } = useCalendario()
   const { rol } = useAuth()
@@ -40,6 +41,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
   const [mostrarForm, setMostrarForm] = useState(false)
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [nuevoColor, setNuevoColor] = useState(COLORES[0])
+  const [nuevoPrivado, setNuevoPrivado] = useState(false)
 
   const [menuAbiertoId, setMenuAbiertoId] = useState(null)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, origin: 'top left' })
@@ -53,11 +55,15 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
       if (menuAbiertoId && !event.target.closest('.dots-menu-container') && !event.target.closest('.fixed-menu')) {
         setMenuAbiertoId(null)
       }
+      if (mostrarForm && !event.target.closest('.create-cal-form-container')) {
+        setMostrarForm(false)
+      }
     }
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
         setMenuAbiertoId(null)
         setCalAEliminar(null)
+        setMostrarForm(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -66,7 +72,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEsc)
     }
-  }, [menuAbiertoId])
+  }, [menuAbiertoId, mostrarForm])
 
   // Conjunto de fechas (YYYY-MM-DD) del mes visible que tienen al menos un
   // evento de un calendario visible. Se usa para pintar el punto indicador.
@@ -101,8 +107,9 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
   const handleCrearCalendario = (e) => {
     e.preventDefault()
     if (!nuevoNombre.trim()) return
-    agregarCalendario({ nombre: nuevoNombre, color: nuevoColor })
+    agregarCalendario({ nombre: nuevoNombre, color: nuevoColor, privado: nuevoPrivado })
     setNuevoNombre('')
+    setNuevoPrivado(false)
     setMostrarForm(false)
   }
 
@@ -151,6 +158,119 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
   }
 
   const dias = generarDiasMini()
+
+  // Los calendarios ya vienen filtrados por privacidad desde el contexto (un
+  // privado ajeno ni aparece). Acá solo separamos en dos secciones visuales.
+  const calendariosPublicos = calendarios.filter((c) => c.privado !== true)
+  const calendariosPrivados = calendarios.filter((c) => c.privado === true)
+
+  // Fila de un calendario (se reusa en "Mis calendarios" y en "Privados").
+  const renderFilaCalendario = (cal) => (
+    <motion.div
+      key={cal.id}
+      layout
+      variants={fadeUpItem}
+      exit={{ opacity: 0, height: 0, marginTop: 0, transition: spring }}
+      whileHover={{ backgroundColor: 'var(--hover-color)' }}
+      className="dots-menu-container flex items-center gap-2 px-2 py-1 rounded-[var(--radius-md)] cursor-pointer group transition-colors relative"
+      onClick={() => toggleCalendarioVisible(cal.id)}
+      role="checkbox"
+      aria-checked={cal.visible}
+      aria-label={`Calendario ${cal.nombre}${cal.privado ? ', privado' : ''}`}
+    >
+      {/* Checkbox de color claro: relleno = visible, contorno = oculto. */}
+      <span
+        className={`w-3.5 h-3.5 rounded-[4px] flex items-center justify-center transition-all flex-shrink-0 ${cal.visible ? '' : 'opacity-50'}`}
+        style={{
+          backgroundColor: cal.visible ? cal.color : 'transparent',
+          boxShadow: `inset 0 0 0 2px ${cal.color}`
+        }}
+      >
+        {cal.visible && <Check size={10} className="text-white" strokeWidth={3} />}
+      </span>
+      {cal.privado && (
+        <Lock size={12} className="text-[var(--text-tertiary)] flex-shrink-0" aria-hidden="true" />
+      )}
+      <span className={`text-sm font-medium transition-colors truncate flex-1 ${cal.visible ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]'}`}>
+        {cal.nombre}
+      </span>
+
+      <motion.button
+        onClick={(e) => handleAbrirMenu(e, cal.id)}
+        whileTap={tapSoft}
+        aria-label={`Opciones de ${cal.nombre}`}
+        aria-haspopup="menu"
+        className={`relative z-10 inline-flex flex-shrink-0 items-center justify-center h-8 w-8 rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)] ${menuAbiertoId === cal.id ? 'opacity-100' : ''}`}
+      >
+        <MoreVertical size={16} />
+      </motion.button>
+
+      {/* Menú contextual — fixed para evitar recortes por overflow.
+          El portal DEBE envolver a AnimatePresence (no al revés):
+          AnimatePresence no rastrea un createPortal crudo como hijo. */}
+      {createPortal(
+        <AnimatePresence>
+        {menuAbiertoId === cal.id && (
+          <motion.div
+            role="menu"
+            variants={menuVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="fixed-menu fixed bg-[var(--bg-primary)] rounded-[var(--radius-lg)] z-[9999] w-60 p-1.5 border border-[var(--border-color)] shadow-[var(--shadow-lg)]"
+            style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px`, transformOrigin: menuPos.origin }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* "Ver solo este" es una preferencia de vista local: disponible para todos. */}
+            <button
+              role="menuitem"
+              onClick={(e) => { e.stopPropagation(); verSoloEsteCalendario(cal.id); setMenuAbiertoId(null) }}
+              className="w-full text-left px-4 min-h-[40px] rounded-[var(--radius-md)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--hover-color)]"
+            >
+              <Eye size={18} className="text-[var(--text-secondary)] flex-shrink-0" />
+              Ver solo este
+            </button>
+
+            {/* Colores, privacidad y eliminar — SOLO admin. */}
+            {puedeGestionar && (
+              <>
+                <div className="px-4 py-3 border-t border-b border-[var(--border-color)] my-1">
+                  <SelectorColor
+                    value={cal.color}
+                    onChange={(c) => cambiarColorCalendario(cal.id, c)}
+                    size={20}
+                  />
+                </div>
+
+                <button
+                  role="menuitem"
+                  onClick={(e) => { e.stopPropagation(); cambiarPrivacidadCalendario(cal.id, !cal.privado); setMenuAbiertoId(null) }}
+                  className="w-full text-left px-4 min-h-[40px] rounded-[var(--radius-md)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--hover-color)]"
+                >
+                  {cal.privado
+                    ? <Unlock size={18} className="text-[var(--text-secondary)] flex-shrink-0" />
+                    : <Lock size={18} className="text-[var(--text-secondary)] flex-shrink-0" />}
+                  {cal.privado ? 'Hacer público' : 'Hacer privado'}
+                </button>
+
+                <motion.button
+                  role="menuitem"
+                  onClick={(e) => { e.stopPropagation(); handlePedirEliminar(cal) }}
+                  whileTap={tapSoft}
+                  className="w-full text-left px-4 min-h-[40px] rounded-[var(--radius-md)] text-sm font-medium text-[var(--danger-color)] hover:bg-[var(--danger-soft)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--danger-soft)]"
+                >
+                  <Trash2 size={18} className="flex-shrink-0" />
+                  Eliminar calendario
+                </motion.button>
+              </>
+            )}
+          </motion.div>
+        )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </motion.div>
+  )
 
   return (
     <div className="w-64 flex-shrink-0 border-r border-[var(--border-color)] flex flex-col py-6 overflow-y-auto bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200 custom-scrollbar relative">
@@ -227,7 +347,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
 
       {/* Sección Mis Calendarios */}
       <div className="flex flex-col gap-2 px-3">
-        <div className="flex items-center justify-between mb-1 px-1">
+        <div className="flex items-center justify-between mb-1 px-1 create-cal-form-container">
           <span className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Mis calendarios</span>
           {/* Añadir calendario — SOLO admin. */}
           {puedeGestionar && (
@@ -251,7 +371,7 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={spring}
-              className="overflow-hidden"
+              className="overflow-hidden create-cal-form-container"
             >
               <form onSubmit={handleCrearCalendario} className="flex flex-col gap-3 p-4 border border-[var(--border-color)] rounded-[var(--radius-md)] bg-[var(--bg-secondary)] shadow-[var(--shadow-md)]">
                 <input
@@ -263,6 +383,19 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
                   autoFocus
                 />
                 <SelectorColor value={nuevoColor} onChange={setNuevoColor} size={24} />
+                {/* Toggle privado/público con el MISMO diseño que el ítem del
+                    menú de edición (icono + texto, alterna al tocar). */}
+                <button
+                  type="button"
+                  onClick={() => setNuevoPrivado((v) => !v)}
+                  aria-pressed={nuevoPrivado}
+                  className="w-full text-left px-4 min-h-[40px] rounded-[var(--radius-md)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--hover-color)]"
+                >
+                  {nuevoPrivado
+                    ? <Unlock size={18} className="text-[var(--text-secondary)] flex-shrink-0" />
+                    : <Lock size={18} className="text-[var(--text-secondary)] flex-shrink-0" />}
+                  {nuevoPrivado ? 'Hacer público' : 'Hacer privado'}
+                </button>
                 <div className="flex gap-2 justify-end mt-1">
                   <motion.button
                     type="button"
@@ -292,101 +425,31 @@ function Sidebar({ mesActual, anioActual, onDiaClick, onCrearEvento, onMesAnteri
           animate="animate"
         >
           <AnimatePresence initial={false}>
-          {calendarios.map(cal => (
-            <motion.div
-              key={cal.id}
-              layout
-              variants={fadeUpItem}
-              exit={{ opacity: 0, height: 0, marginTop: 0, transition: spring }}
-              whileHover={{ backgroundColor: 'var(--hover-color)' }}
-              className="dots-menu-container flex items-center gap-2 px-2 py-1 rounded-[var(--radius-md)] cursor-pointer group transition-colors relative"
-              onClick={() => toggleCalendarioVisible(cal.id)}
-              role="checkbox"
-              aria-checked={cal.visible}
-              aria-label={`Calendario ${cal.nombre}`}
-            >
-              {/* Checkbox de color claro: relleno = visible, contorno = oculto. */}
-              <span
-                className={`w-3.5 h-3.5 rounded-[4px] flex items-center justify-center transition-all flex-shrink-0 ${cal.visible ? '' : 'opacity-50'}`}
-                style={{
-                  backgroundColor: cal.visible ? cal.color : 'transparent',
-                  boxShadow: `inset 0 0 0 2px ${cal.color}`
-                }}
-              >
-                {cal.visible && <Check size={10} className="text-white" strokeWidth={3} />}
-              </span>
-              <span className={`text-sm font-medium transition-colors truncate flex-1 ${cal.visible ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]'}`}>
-                {cal.nombre}
-              </span>
-
-              <motion.button
-                onClick={(e) => handleAbrirMenu(e, cal.id)}
-                whileTap={tapSoft}
-                aria-label={`Opciones de ${cal.nombre}`}
-                aria-haspopup="menu"
-                className={`relative z-10 inline-flex flex-shrink-0 items-center justify-center h-8 w-8 rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:shadow-[var(--ring-accent)] ${menuAbiertoId === cal.id ? 'opacity-100' : ''}`}
-              >
-                <MoreVertical size={16} />
-              </motion.button>
-
-              {/* Menú contextual — fixed para evitar recortes por overflow.
-                  El portal DEBE envolver a AnimatePresence (no al revés):
-                  AnimatePresence no rastrea un createPortal crudo como hijo. */}
-              {createPortal(
-                <AnimatePresence>
-                {menuAbiertoId === cal.id && (
-                  <motion.div
-                    role="menu"
-                    variants={menuVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    className="fixed-menu fixed bg-[var(--bg-primary)] rounded-[var(--radius-lg)] z-[9999] w-60 p-1.5 border border-[var(--border-color)] shadow-[var(--shadow-lg)]"
-                    style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px`, transformOrigin: menuPos.origin }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* "Ver solo este" es una preferencia de vista local: disponible para todos. */}
-                    <button
-                      role="menuitem"
-                      onClick={(e) => { e.stopPropagation(); verSoloEsteCalendario(cal.id); setMenuAbiertoId(null) }}
-                      className="w-full text-left px-4 min-h-[40px] rounded-[var(--radius-md)] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--hover-color)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--hover-color)]"
-                    >
-                      <Eye size={18} className="text-[var(--text-secondary)] flex-shrink-0" />
-                      Ver solo este
-                    </button>
-
-                    {/* Colores y eliminar — SOLO admin. */}
-                    {puedeGestionar && (
-                      <>
-                        <div className="px-4 py-3 border-t border-b border-[var(--border-color)] my-1">
-                          <SelectorColor
-                            value={cal.color}
-                            onChange={(c) => cambiarColorCalendario(cal.id, c)}
-                            size={20}
-                          />
-                        </div>
-
-                        <motion.button
-                          role="menuitem"
-                          onClick={(e) => { e.stopPropagation(); handlePedirEliminar(cal) }}
-                          whileTap={tapSoft}
-                          className="w-full text-left px-4 min-h-[40px] rounded-[var(--radius-md)] text-sm font-medium text-[var(--danger-color)] hover:bg-[var(--danger-soft)] transition-colors flex items-center gap-3 focus-visible:outline-none focus-visible:bg-[var(--danger-soft)]"
-                        >
-                          <Trash2 size={18} className="flex-shrink-0" />
-                          Eliminar calendario
-                        </motion.button>
-                      </>
-                    )}
-                  </motion.div>
-                )}
-                </AnimatePresence>,
-                document.body
-              )}
-            </motion.div>
-          ))}
+            {calendariosPublicos.map(renderFilaCalendario)}
           </AnimatePresence>
         </motion.div>
       </div>
+
+      {/* Sección Privados — solo si hay alguno. La sección (con candado) es la
+          señal principal de privacidad; no dependemos solo del color (a11y). */}
+      {calendariosPrivados.length > 0 && (
+        <div className="flex flex-col gap-2 px-3 mt-6">
+          <div className="flex items-center gap-2 mb-1 px-1">
+            <Lock size={13} className="text-[var(--text-tertiary)] flex-shrink-0" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Privados</span>
+          </div>
+          <motion.div
+            className="flex flex-col gap-0.5"
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+          >
+            <AnimatePresence initial={false}>
+              {calendariosPrivados.map(renderFilaCalendario)}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+      )}
 
       {/* Diálogo de confirmación de borrado de calendario. */}
       <AnimatePresence>

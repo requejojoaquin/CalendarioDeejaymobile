@@ -23,10 +23,41 @@ import {
   ChevronDown,
   X,
   Pipette,
+  AlertTriangle,
 } from 'lucide-react'
 
 // URL del backend (con fallback a localhost para desarrollo).
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+// Mismo criterio de formato que el backend (server/index.js REGEX_EMAIL).
+const REGEX_EMAIL_CLIENTE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// Historial de emails invitados a mano (no necesariamente usuarios
+// registrados en la app). Vive en localStorage: es un atajo personal del
+// admin que los tipeó, no datos de terceros compilados de otra fuente.
+const HISTORIAL_INVITADOS_KEY = 'mi-calendario:historial-invitados'
+
+function leerHistorialInvitados() {
+  try {
+    const raw = localStorage.getItem(HISTORIAL_INVITADOS_KEY)
+    const arr = raw ? JSON.parse(raw) : []
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
+}
+
+function guardarEnHistorialInvitados(email) {
+  try {
+    const limpio = email.trim().toLowerCase()
+    if (!limpio) return
+    const actual = leerHistorialInvitados()
+    if (actual.includes(limpio)) return
+    localStorage.setItem(HISTORIAL_INVITADOS_KEY, JSON.stringify([limpio, ...actual].slice(0, 50)))
+  } catch {
+    // localStorage puede fallar (modo privado / cuota llena): no es crítico.
+  }
+}
 
 function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
   const { calendarios, agregarEvento, editarEvento, getPresupuesto } = useCalendario()
@@ -103,6 +134,12 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
   const [busquedaInvitado, setBusquedaInvitado] = useState('')
   const [sugerenciasUsuarios, setSugerenciasUsuarios] = useState([])
   const [buscandoUsuarios, setBuscandoUsuarios] = useState(false)
+  // Historial propio de emails ya invitados a mano (localStorage, ver arriba).
+  const [historialInvitados] = useState(leerHistorialInvitados)
+  const [sugerenciasHistorial, setSugerenciasHistorial] = useState([])
+  // Estado de verificación de dominio para un email tipeado a mano:
+  // null | 'verificando' | { formatoValido, dominioExiste }
+  const [estadoEmailLibre, setEstadoEmailLibre] = useState(null)
 
   const searchRef = useRef(null)
   const [posUbicacion, setPosUbicacion] = useState(null)
@@ -178,11 +215,23 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
   }, [sugerencias.length])
 
   useEffect(() => {
-    if (busquedaInvitado.length < 2) {
-      setSugerenciasUsuarios([])
-      return
-    }
+    const termino = busquedaInvitado.trim().toLowerCase()
+
     const buscarUsuarios = async () => {
+      if (busquedaInvitado.length < 2) {
+        setSugerenciasUsuarios([])
+        setSugerenciasHistorial([])
+        setEstadoEmailLibre(null)
+        return
+      }
+
+      // Coincidencias del historial propio: no requieren red, se filtran ya.
+      setSugerenciasHistorial(
+        historialInvitados
+          .filter((email) => email.includes(termino) && email !== termino && !invitados.some((i) => i.email?.toLowerCase() === email))
+          .slice(0, 5)
+      )
+
       setBuscandoUsuarios(true)
       try {
         const q = query(
@@ -202,10 +251,27 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
       } finally {
         setBuscandoUsuarios(false)
       }
+
+      // Si lo tipeado ya tiene forma de email completo y no está invitado
+      // todavía, chequeamos contra el backend si el dominio existe de
+      // verdad (DNS MX/A) antes de dejar invitar a ciegas.
+      if (REGEX_EMAIL_CLIENTE.test(termino) && !invitados.some((i) => i.email?.toLowerCase() === termino)) {
+        setEstadoEmailLibre('verificando')
+        try {
+          const res = await fetch(`${API_URL}/api/verificar-email?email=${encodeURIComponent(termino)}`)
+          const data = await res.json()
+          setEstadoEmailLibre(data)
+        } catch (error) {
+          console.error('Error verificando email:', error)
+          setEstadoEmailLibre(null)
+        }
+      } else {
+        setEstadoEmailLibre(null)
+      }
     }
     const timer = setTimeout(buscarUsuarios, 300)
     return () => clearTimeout(timer)
-  }, [busquedaInvitado, invitados])
+  }, [busquedaInvitado, invitados, historialInvitados])
 
   const seleccionarSugerencia = (sug) => {
     ubicacionElegidaRef.current = sug.display_name
@@ -234,6 +300,16 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
     setInvitados([...invitados, usuarioInvitado])
     setBusquedaInvitado('')
     setSugerenciasUsuarios([])
+    setSugerenciasHistorial([])
+    setEstadoEmailLibre(null)
+    if (usuarioInvitado.email) guardarEnHistorialInvitados(usuarioInvitado.email)
+  }
+
+  // Invita a un email tipeado a mano que NO es un usuario registrado en la
+  // app (ej. un invitado externo). No tiene `name`: no inventamos datos.
+  const agregarInvitadoLibre = (email) => {
+    const limpio = email.trim()
+    agregarInvitado({ id: limpio, email: limpio, name: null })
   }
 
   const eliminarInvitado = (id) => {
@@ -697,11 +773,37 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
                             Buscando…
                           </div>
                         )}
-                        {!buscandoUsuarios && sugerenciasUsuarios.length === 0 && busquedaInvitado.length >= 2 && (
-                          <div className="px-5 py-4 text-xs text-[var(--text-secondary)]">
-                            No se encontró a nadie con ese email.
-                          </div>
-                        )}
+
+                        {/* Historial propio: emails que ya invitaste antes y coinciden. */}
+                        <AnimatePresence initial={false}>
+                          {sugerenciasHistorial.map((email) => (
+                            <motion.button
+                              type="button"
+                              key={`hist-${email}`}
+                              layout
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.16 }}
+                              onClick={() => agregarInvitadoLibre(email)}
+                              className="w-full text-left px-5 py-3 flex items-center gap-4 hover:bg-[var(--hover-color)] cursor-pointer border-b border-[var(--border-color)] last:border-none focus:outline-none focus-visible:bg-[var(--hover-color)]"
+                            >
+                              <div className="w-9 h-9 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] text-xs font-semibold flex-shrink-0">
+                                {email[0].toUpperCase()}
+                              </div>
+                              <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+                                <span className="text-sm font-semibold text-[var(--text-primary)] truncate">{email}</span>
+                                <span className="text-[11px] text-[var(--text-secondary)] truncate">Ya invitado antes</span>
+                              </div>
+                              <span className="ml-auto flex items-center gap-1.5 text-[11px] font-medium text-[var(--success-color)] flex-shrink-0">
+                                <Check size={16} aria-hidden="true" />
+                                Agregar
+                              </span>
+                            </motion.button>
+                          ))}
+                        </AnimatePresence>
+
+                        {/* Usuarios registrados en la app que coinciden con lo tipeado. */}
                         <AnimatePresence initial={false}>
                           {sugerenciasUsuarios.map((user) => (
                             <motion.button
@@ -733,6 +835,56 @@ function ModalEvento({ onClose, fechaSeleccionada, eventoAEditar }) {
                             </motion.button>
                           ))}
                         </AnimatePresence>
+
+                        {/* Sin coincidencias registradas: ofrecemos invitar el email tal
+                            cual, con un chequeo honesto de si el dominio existe (DNS). No
+                            prometemos "foto real" ni "verificación 100%" — eso requeriría
+                            compilar datos de terceros o un servicio pago, ver nota server. */}
+                        {!buscandoUsuarios && sugerenciasUsuarios.length === 0 && sugerenciasHistorial.length === 0 && busquedaInvitado.length >= 2 && (
+                          estadoEmailLibre ? (
+                            <button
+                              type="button"
+                              onClick={() => agregarInvitadoLibre(busquedaInvitado.trim())}
+                              className="w-full text-left px-5 py-3 flex items-center gap-4 hover:bg-[var(--hover-color)] cursor-pointer focus:outline-none focus-visible:bg-[var(--hover-color)]"
+                            >
+                              <div className="w-9 h-9 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] text-xs font-semibold flex-shrink-0">
+                                {busquedaInvitado.trim()[0]?.toUpperCase()}
+                              </div>
+                              <div className="flex flex-col overflow-hidden flex-1 min-w-0 gap-0.5">
+                                <span className="text-sm font-semibold text-[var(--text-primary)] truncate">
+                                  {busquedaInvitado.trim()}
+                                </span>
+                                {estadoEmailLibre === 'verificando' && (
+                                  <span className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
+                                    <span className="w-2.5 h-2.5 border-2 border-[var(--text-tertiary)] border-t-transparent rounded-full animate-spin-slow" />
+                                    Verificando dominio…
+                                  </span>
+                                )}
+                                {estadoEmailLibre !== 'verificando' && estadoEmailLibre.dominioExiste === true && (
+                                  <span className="flex items-center gap-1 text-[11px] text-[var(--success-color)]">
+                                    <Check size={12} aria-hidden="true" /> Dominio verificado
+                                  </span>
+                                )}
+                                {estadoEmailLibre !== 'verificando' && estadoEmailLibre.dominioExiste === false && (
+                                  <span className="flex items-center gap-1 text-[11px] text-[var(--warning-color)]">
+                                    <AlertTriangle size={12} aria-hidden="true" /> No pudimos confirmar el dominio
+                                  </span>
+                                )}
+                                {estadoEmailLibre !== 'verificando' && estadoEmailLibre.dominioExiste === null && (
+                                  <span className="text-[11px] text-[var(--text-tertiary)]">No se pudo verificar el dominio</span>
+                                )}
+                              </div>
+                              <span className="ml-auto flex items-center gap-1.5 text-[11px] font-medium text-[var(--accent-color)] flex-shrink-0">
+                                <Plus size={16} aria-hidden="true" />
+                                Invitar
+                              </span>
+                            </button>
+                          ) : (
+                            <div className="px-5 py-4 text-xs text-[var(--text-secondary)]">
+                              No se encontró a nadie con ese email.
+                            </div>
+                          )
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
